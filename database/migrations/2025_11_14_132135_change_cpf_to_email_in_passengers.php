@@ -11,11 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('passengers', function (Blueprint $table) {
-            $table->dropColumn('cpf');
-            $table->string('email')->after('name');
-            $table->string('password', 8)->change();
-        });
+        // Obsoleto: cpf e password já tratados na criação da tabela
+        // Schema::table('passengers', function (Blueprint $table) {
+        //     $table->dropColumn('cpf');
+        //     $table->string('email')->after('name');
+        //     $table->string('password', 8)->change();
+        // });
     }
 
     /**

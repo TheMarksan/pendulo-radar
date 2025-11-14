@@ -355,10 +355,15 @@
                             <strong>🕒 Horário:</strong> {{ $reservation->scheduled_time_start }} - {{ $reservation->scheduled_time_end }}
                         </div>
                         <div class="reservation-detail">
-                            <strong>📍 Local:</strong> {{ $reservation->address }}
+                            <strong>📍 Local:</strong>
+                            @if($reservation->stop)
+                                {{ $reservation->stop->name }} - {{ $reservation->address }}
+                            @else
+                                {{ $reservation->address }}
+                            @endif
                         </div>
                         <div class="reservation-detail">
-                            <strong>📄 Comprovante:</strong> 
+                            <strong>📄 Comprovante:</strong>
                             @if($reservation->payment_method === 'pix')
                                 @if($reservation->receipt_path)
                                     <span style="color: #28a745;">✓ Anexado</span>
@@ -401,39 +406,26 @@ function confirmBoarding(reservationId) {
         return;
     }
 
-    // Get user's current location
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                // Send boarding confirmation
-                fetch(`/passageiro/reserva/${reservationId}/confirmar-embarque`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert('Embarque confirmado com sucesso!');
-                    window.location.reload();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Erro ao confirmar embarque. Tente novamente.');
-                });
-            },
-            function(error) {
-                alert('Erro ao obter sua localização. Por favor, permita o acesso à localização.');
-            }
-        );
-    } else {
-        alert('Geolocalização não suportada pelo navegador.');
-    }
+    fetch(`/passageiro/reserva/${reservationId}/confirmar-embarque`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Embarque confirmado com sucesso!');
+            window.location.reload();
+        } else {
+            alert('Erro ao confirmar embarque: ' + (data.message || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erro ao confirmar embarque. Tente novamente.');
+    });
 }
 </script>
 @endsection

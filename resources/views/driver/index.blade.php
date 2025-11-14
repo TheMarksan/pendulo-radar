@@ -81,43 +81,44 @@
 
     .stats {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        margin-bottom: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-bottom: 15px;
     }
 
     .stat-card {
         background: linear-gradient(135deg, #667eea 0%, #343b71 100%);
         color: white;
-        padding: 20px;
-        border-radius: 8px;
+        padding: 12px 15px;
+        border-radius: 6px;
         text-align: center;
     }
 
     .stat-card h3 {
-        font-size: 2.5em;
-        margin-bottom: 5px;
+        font-size: 1.6em;
+        margin-bottom: 3px;
     }
 
     .stat-card p {
         opacity: 0.9;
+        font-size: 0.85em;
     }
 
     .passenger-list {
-        margin-top: 20px;
+        margin-top: 15px;
     }
 
     .passenger-item {
         background: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-        border-left: 4px solid #343b71;
+        padding: 12px 15px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        border-left: 3px solid #343b71;
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
-        gap: 15px;
+        gap: 10px;
     }
 
     .passenger-info {
@@ -127,17 +128,19 @@
 
     .passenger-info h4 {
         color: #343b71;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
+        font-size: 0.95em;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         flex-wrap: wrap;
     }
 
     .passenger-info p {
-        margin: 8px 0;
+        margin: 5px 0;
         color: #666;
-        line-height: 1.6;
+        line-height: 1.4;
+        font-size: 0.85em;
     }
 
     .passenger-actions {
@@ -152,22 +155,22 @@
 
     .receipt-badge {
         display: inline-block;
-        padding: 5px 10px;
+        padding: 3px 8px;
         background: #28a745;
         color: white;
-        border-radius: 5px;
-        font-size: 0.85em;
-        margin-left: 10px;
+        border-radius: 4px;
+        font-size: 0.75em;
+        margin-left: 5px;
     }
 
     .no-receipt-badge {
         display: inline-block;
-        padding: 5px 10px;
+        padding: 3px 8px;
         background: #6c757d;
         color: white;
-        border-radius: 5px;
-        font-size: 0.85em;
-        margin-left: 10px;
+        border-radius: 4px;
+        font-size: 0.75em;
+        margin-left: 5px;
     }
 
     @media (max-width: 768px) {
@@ -225,17 +228,118 @@
 
 @section('content')
 <div class="card">
-    <a href="{{ route('home') }}" class="back-link">← Voltar</a>
-    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <a href="{{ route('home') }}" class="back-link" style="margin: 0;">← Voltar</a>
+        <a href="{{ route('driver.logout') }}" class="btn" style="background: #dc3545; padding: 10px 20px; text-decoration: none; display: inline-block;">
+            🚪 Sair
+        </a>
+    </div>
+
     <h2 style="color: #343b71; font-size: 2em; margin-bottom: 20px;">
         Passageiros Reservados
     </h2>
+
+    @if(isset($noCar) && $noCar)
+        <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 30px; text-align: center; margin: 40px 0;">
+            <div style="font-size: 4em; margin-bottom: 15px;">⏳</div>
+            <h3 style="color: #856404; margin-bottom: 15px; font-size: 1.5em;">Aguardando Configuração</h3>
+            <p style="color: #856404; font-size: 1.1em; margin-bottom: 10px;">
+                Seu cadastro foi realizado com sucesso!
+            </p>
+            <p style="color: #856404; font-size: 1em;">
+                O administrador ainda não criou seu carro e configurou os horários.<br>
+                Entre em contato com o administrador para concluir a configuração.
+            </p>
+            <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 6px;">
+                <strong>📋 Seus dados:</strong><br>
+                <small style="color: #666;">
+                    Nome: {{ $driver->name }}<br>
+                    Email: {{ $driver->email }}<br>
+                    @if($driver->route)
+                        Rota: {{ $driver->route->name }}
+                    @endif
+                </small>
+            </div>
+        </div>
+    @else
 
     @php
         $pixPassengers = $passengers->where('payment_method', 'pix');
         $pixWithReceipt = $pixPassengers->where('receipt_path', '!=', null)->count();
         $pixPending = $pixPassengers->count() - $pixWithReceipt;
     @endphp
+
+    <form method="GET" action="{{ route('driver.index') }}" class="filters">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="date">Filtrar por Data</label>
+            <input
+                type="date"
+                id="date"
+                name="date"
+                value="{{ request('date', date('Y-m-d')) }}"
+            >
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="time_start">Intervalo de Horário</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <input
+                    type="time"
+                    id="time_start"
+                    name="time_start"
+                    value="{{ request('time_start', now()->format('H:i')) }}"
+                    placeholder="Das"
+                >
+                <input
+                    type="time"
+                    id="time_end"
+                    name="time_end"
+                    value="{{ request('time_end') }}"
+                    placeholder="Até"
+                >
+            </div>
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn">Filtrar</button>
+            <a href="{{ route('driver.index') }}" class="btn btn-secondary">Limpar</a>
+        </div>
+    </form>
+
+    @if($car && $car->driver->route && $car->driver->route->has_return)
+    <div style="margin-bottom: 15px; padding: 15px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <strong style="color: #856404;">🔄 Controle de Retorno</strong>
+                <p style="margin: 5px 0 0 0; color: #856404; font-size: 0.9em;">
+                    Clique quando iniciar a viagem de retorno
+                </p>
+            </div>
+            <button
+                onclick="startReturn()"
+                class="btn"
+                style="background: #ffc107; color: #856404; border: none; padding: 10px 20px; font-weight: 600;"
+            >
+                🔄 Iniciar Retorno
+            </button>
+        </div>
+    </div>
+    @endif
+
+    @if($lastBoarding)
+    <div class="alert alert-info" style="background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 12px 15px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9em;">
+        <strong>🚗 Último Embarque:</strong> {{ $lastBoarding->name }} embarcou há {{ $lastBoarding->boarded_at->diffForHumans() }}
+    </div>
+    @endif
+
+    <div style="position: relative;">
+        <div id="map"></div>
+        <div class="map-controls">
+            <button type="button" class="btn" onclick="fitMapToMarkers()">
+                🗺️ Ver Todos
+            </button>
+        </div>
+    </div>
 
     <div class="stats">
         <div class="stat-card">
@@ -259,68 +363,26 @@
         @endif
     </div>
 
-    <form method="GET" action="{{ route('driver.index') }}" class="filters">
-        <div class="form-group" style="margin-bottom: 0;">
-            <label for="date">Filtrar por Data</label>
-            <input 
-                type="date" 
-                id="date" 
-                name="date" 
-                value="{{ request('date', date('Y-m-d')) }}"
-            >
-        </div>
-
-        <div class="form-group" style="margin-bottom: 0;">
-            <label for="time_start">Intervalo de Horário</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <input 
-                    type="time" 
-                    id="time_start" 
-                    name="time_start" 
-                    value="{{ request('time_start', now()->format('H:i')) }}"
-                    placeholder="Das"
-                >
-                <input 
-                    type="time" 
-                    id="time_end" 
-                    name="time_end" 
-                    value="{{ request('time_end') }}"
-                    placeholder="Até"
-                >
-            </div>
-        </div>
-
-        <div class="filter-actions">
-            <button type="submit" class="btn">Filtrar</button>
-            <a href="{{ route('driver.index') }}" class="btn btn-secondary">Limpar</a>
-        </div>
-    </form>
-
-    @if($lastBoarding)
-    <div class="alert alert-info" style="background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-        <strong>🚗 Último Embarque:</strong> {{ $lastBoarding->name }} embarcou há {{ $lastBoarding->boarded_at->diffForHumans() }}
-    </div>
-    @endif
-
-    <div style="position: relative;">
-        <div id="map"></div>
-        <div class="map-controls">
-            <button type="button" class="btn" onclick="fitMapToMarkers()">
-                🗺️ Ver Todos
-            </button>
-        </div>
-    </div>
-
     <div class="passenger-list">
-        <h3 style="color: #343b71; margin-bottom: 15px;">Lista de Passageiros</h3>
-        
+        <h3 style="color: #343b71; margin-bottom: 12px; font-size: 1.1em;">Lista de Passageiros</h3>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 18px;">
+            <input id="searchInput" type="text" placeholder="Pesquisar por nome ou email..." style="flex: 1; min-width: 180px; max-width: 350px; padding: 10px 14px; border: 2px solid #343b71; border-radius: 8px; font-size: 1em;">
+            <select id="paymentFilter" style="min-width: 160px; max-width: 200px; padding: 10px 14px; border: 2px solid #343b71; border-radius: 8px; font-size: 1em;">
+                <option value="all">Todos os Pagamentos</option>
+                <option value="pix">Pagamento PIX</option>
+                <option value="no_pix">Sem PIX</option>
+            </select>
+        </div>
+
+        <div id="passengerListScroll" style="overflow-y: auto; max-height: 480px; border-radius: 8px; border: 1.5px solid #e9ecef; padding: 8px;">
         @if($passengers->isEmpty())
             <p style="text-align: center; color: #666; padding: 40px;">
                 Nenhum passageiro reservado para os filtros selecionados.
             </p>
         @else
             @foreach($passengers as $passenger)
-                <div class="passenger-item">
+                <div class="passenger-item" data-name="{{ strtolower($passenger->name) }}" data-email="{{ strtolower($passenger->email) }}" data-payment="{{ $passenger->payment_method }}">
                     <div class="passenger-info">
                         <h4>
                             {{ $passenger->name }}
@@ -337,9 +399,15 @@
                         </h4>
                         <p><strong>📅 Data:</strong> {{ $passenger->scheduled_time->format('d/m/Y') }}</p>
                         <p><strong>🕒 Horário:</strong> {{ $passenger->scheduled_time_start }} - {{ $passenger->scheduled_time_end }}</p>
-                        <p><strong>📍 Local:</strong> {{ $passenger->address }}</p>
+                        <p><strong>📍 Local:</strong>
+                            @if($passenger->stop)
+                                {{ $passenger->stop->name }}
+                            @else
+                                {{ $passenger->address }}
+                            @endif
+                        </p>
                         <p><strong>🔢 Código:</strong> #{{ str_pad($passenger->id, 6, '0', STR_PAD_LEFT) }}</p>
-                        <p><strong>💳 Pagamento:</strong> 
+                        <p><strong>💳 Pagamento:</strong>
                             @if($passenger->payment_method === 'pix')
                                 💳 PIX
                             @elseif($passenger->payment_method === 'dinheiro')
@@ -351,13 +419,13 @@
                     </div>
                     <div class="passenger-actions">
                         @if($passenger->payment_method === 'pix' && $passenger->receipt_path)
-                            <a href="{{ route('driver.receipt', $passenger->id) }}" 
+                            <a href="{{ route('driver.receipt', $passenger->id) }}"
                                target="_blank"
                                class="btn btn-small">
                                 Ver Comprovante
                             </a>
                         @endif
-                        <button 
+                        <button
                             onclick="focusOnMarker({{ $passenger->latitude }}, {{ $passenger->longitude }})"
                             class="btn btn-small btn-secondary">
                             Ver no Mapa
@@ -366,7 +434,41 @@
                 </div>
             @endforeach
         @endif
+        </div>
     </div>
+@section('scripts')
+@parent
+<script>
+// Recarregar página automaticamente a cada 30 segundos
+setInterval(() => {
+    window.location.reload();
+}, 30000);
+
+const searchInput = document.getElementById('searchInput');
+const paymentFilter = document.getElementById('paymentFilter');
+const passengerItems = document.querySelectorAll('.passenger-item');
+
+function filterPassengerList() {
+    const search = searchInput.value.trim().toLowerCase();
+    const payment = paymentFilter.value;
+    passengerItems.forEach(item => {
+        const name = item.getAttribute('data-name');
+        const email = item.getAttribute('data-email');
+        const pay = item.getAttribute('data-payment');
+        let show = (name.includes(search) || email.includes(search));
+        if (payment === 'pix') {
+            show = show && pay === 'pix';
+        } else if (payment === 'no_pix') {
+            show = show && pay !== 'pix';
+        }
+        item.style.display = show ? '' : 'none';
+    });
+}
+
+searchInput.addEventListener('input', filterPassengerList);
+paymentFilter.addEventListener('change', filterPassengerList);
+</script>
+@endsection
 </div>
 @endsection
 
@@ -399,6 +501,61 @@
             mapTypeControl: false,
         });
 
+        // Try to get driver's current location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async function(position) {
+                    const driverLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+
+                    // Create custom pin for driver
+                    const driverPin = new PinElement({
+                        background: '#007bff',
+                        borderColor: 'white',
+                        glyphColor: 'white',
+                        glyph: '🚗',
+                        scale: 1.5,
+                    });
+
+                    // Add driver marker
+                    const driverMarker = new AdvancedMarkerElement({
+                        map: map,
+                        position: driverLocation,
+                        title: 'Sua Localização',
+                        content: driverPin.element,
+                    });
+
+                    // Create info window for driver
+                    const driverInfoContent = document.createElement('div');
+                    driverInfoContent.style.padding = '8px';
+                    driverInfoContent.style.fontSize = '14px';
+                    driverInfoContent.innerHTML = `
+                        <h4 style="margin: 0 0 5px 0; color: #007bff; font-size: 1em; font-weight: 600;">🚗 Você está aqui</h4>
+                        <p style="margin: 2px 0; font-size: 0.9em; color: #666;">Localização atual do motorista</p>
+                    `;
+
+                    const driverInfoWindow = new google.maps.InfoWindow({
+                        content: driverInfoContent,
+                        pixelOffset: new google.maps.Size(0, -5),
+                    });
+
+                    driverMarker.addListener('click', () => {
+                        markers.forEach(m => m.infoWindow?.close());
+                        driverInfoWindow.open(map, driverMarker);
+                    });
+
+                    // Center map on driver location
+                    map.setCenter(driverLocation);
+                    map.setZoom(12);
+                },
+                function(error) {
+                    console.log('Erro ao obter localização:', error);
+                }
+            );
+        }
+
         // Add markers for each passenger
         if (passengers.length > 0) {
             const bounds = new google.maps.LatLngBounds();
@@ -412,7 +569,7 @@
 
                 // Create pin with custom color
                 const pin = new PinElement({
-                    background: passenger.payment_method === 'pix' 
+                    background: passenger.payment_method === 'pix'
                         ? (passenger.receipt_path ? '#28a745' : '#dc3545')
                         : '#343b71',
                     borderColor: 'white',
@@ -475,10 +632,10 @@
         const position = { lat: parseFloat(lat), lng: parseFloat(lng) };
         map.setCenter(position);
         map.setZoom(15);
-        
+
         // Find and click the marker
         markers.forEach(({ marker, position: markerPos, infoWindow }) => {
-            if (Math.abs(markerPos.lat - position.lat) < 0.0001 && 
+            if (Math.abs(markerPos.lat - position.lat) < 0.0001 &&
                 Math.abs(markerPos.lng - position.lng) < 0.0001) {
                 // Close all info windows
                 markers.forEach(m => m.infoWindow?.close());
@@ -497,8 +654,79 @@
             map.fitBounds(bounds);
         }
     }
+
+    function startReturn() {
+        if (!confirm('Confirmar que está iniciando a viagem de retorno?\n\nOs passageiros passarão a ver o progresso das paradas de retorno.')) {
+            return;
+        }
+
+        const date = document.querySelector('input[name="date"]')?.value || '{{ date("Y-m-d") }}';
+        const timeStart = document.querySelector('input[name="time_start"]')?.value || '{{ now()->format("H:i") }}';
+
+        fetch('{{ route("driver.start.return") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                trip_date: date,
+                time_start: timeStart
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✓ ' + data.message);
+                location.reload();
+            } else {
+                alert('❌ Erro: ' + (data.message || 'Erro desconhecido'));
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('❌ Erro ao iniciar retorno. Tente novamente.');
+        });
+    }
+
+    function confirmStop(stopId, stopName) {
+        if (!confirm('Confirmar passagem pela parada:\n' + stopName + '?')) {
+            return;
+        }
+
+        const date = document.querySelector('input[name="date"]')?.value || '{{ date("Y-m-d") }}';
+        const timeStart = document.querySelector('input[name="time_start"]')?.value || '{{ now()->format("H:i") }}';
+
+        fetch('{{ route("driver.confirm.stop") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                stop_id: stopId,
+                trip_date: date,
+                time_start: timeStart,
+                direction: 'outbound' // Pode ser ajustado dinamicamente
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✓ ' + data.message);
+                location.reload();
+            } else {
+                alert('❌ Erro: ' + (data.message || 'Erro desconhecido'));
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('❌ Erro ao confirmar parada. Tente novamente.');
+        });
+    }
 </script>
 <script async defer
     src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google_maps.api_key') }}&loading=async&callback=initMap">
 </script>
+@endif
 @endsection

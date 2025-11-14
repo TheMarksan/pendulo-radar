@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Obsoleto: cpf e password já não são necessários aqui
-        // Schema::table('passengers', function (Blueprint $table) {
-        //     $table->string('cpf', 14)->unique()->after('name');
-        //     $table->string('password', 4)->after('cpf');
-        // });
+        Schema::table('passengers', function (Blueprint $table) {
+            $table->foreignId('stop_id')->nullable()->after('car_id')->constrained()->onDelete('set null');
+        });
     }
 
     /**
@@ -24,7 +22,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('passengers', function (Blueprint $table) {
-            $table->dropColumn(['cpf', 'password']);
+            $table->dropForeign(['stop_id']);
+            $table->dropColumn('stop_id');
         });
     }
 };
