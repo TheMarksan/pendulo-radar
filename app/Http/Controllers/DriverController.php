@@ -2,15 +2,108 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Driver;
+use App\Models\Car;
 use App\Models\Passenger;
+use App\Models\TripProgress;
+use App\Models\Stop;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class DriverController extends Controller
 {
-    public function index(Request $request)
+    public function registerForm()
     {
-        // Only get actual reservations (with scheduled_time)
-        $query = Passenger::whereNotNull('scheduled_time');
+        return view('driver.register');
+    }
+
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:drivers,email',
+            'password' => 'required|string|min:4|max:8|confirmed',
+            'phone' => 'required|string',
+            'pix_key' => 'nullable|string',
+            'access_key' => 'required|string',
+            'route_id' => 'required|exists:routes,id',
+        ]);
+
+        // Verificar chave de acesso
+        $accessKey = \App\Models\AccessKey::where('key', $validated['access_key'])
+            ->where('is_active', true)
+            ->first();
+
+        if (!$accessKey) {
+            return back()->withErrors(['access_key' => 'Chave de acesso inválida ou inativa.'])->withInput();
+        }
+
+        // Incrementar uso da chave
+        $accessKey->increment('usage_count');
+
+        // Criar motorista
+        $driver = Driver::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'phone' => $validated['phone'],
+            'pix_key' => $validated['pix_key'],
+            'access_key' => $validated['access_key'],
+            'route_id' => $validated['route_id'],
+        ]);
+
+        // Auto login
+        session(['driver_id' => $driver->id]);
+
+        return redirect()->route('driver.dashboard')
+            ->with('success', 'Cadastro realizado com sucesso! Aguarde o administrador criar seu carro e configurar os horários.');
+    }
+
+    public function login()
+    {
+        return view('driver.login');
+    }
+
+    public function authenticate(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $driver = Driver::where('email', $request->email)->first();
+
+        if (!$driver || !Hash::check($request->password, $driver->password)) {
+            return back()->withErrors(['email' => 'Email ou senha incorretos.'])
+                ->withInput($request->only('email'));
+        }
+
+        session(['driver_id' => $driver->id]);
+
+        return redirect()->route('driver.dashboard')
+            ->with('success', 'Login realizado com sucesso!');
+    }
+
+    public function logout()
+    {
+        session()->forget('driver_id');
+        return redirect()->route('driver.login')
+            ->with('success', 'Logout realizado com sucesso!');
+    }
+
+    public function dashboard(Request $request)
+    {
+        $driverId = session('driver_id');
+
+        if (!$driverId) {
+            return redirect()->route('driver.login')
+                ->with('error', 'Faça login para continuar.');
+        }
+
+        $driver = Driver::findOrFail($driverId);
+
+        // Buscar reservas do motorista
+        $query = Passenger::with('stop')->where('driver_id', $driver->id)->whereNotNull('scheduled_time');
 
         // Filter by date if provided
         if ($request->has('date')) {
@@ -28,23 +121,96 @@ class DriverController extends Controller
 
         $passengers = $query->orderBy('scheduled_time')->orderBy('scheduled_time_start')->get();
 
-        // Get last boarding location
-        $lastBoarding = Passenger::where('boarded', true)
+        // Último embarque do motorista
+        $lastBoarding = Passenger::with('stop')->where('driver_id', $driver->id)
+            ->where('boarded', true)
             ->whereNotNull('boarded_at')
             ->orderBy('boarded_at', 'desc')
             ->first();
 
-        return view('driver.index', compact('passengers', 'lastBoarding'));
+        return view('driver.index', [
+            'passengers' => $passengers,
+            'lastBoarding' => $lastBoarding,
+            'driver' => $driver,
+            'car' => null,
+            'noCar' => false
+        ]);
     }
 
     public function viewReceipt($id)
     {
         $passenger = Passenger::findOrFail($id);
-        
+
         if (!$passenger->receipt_path) {
             abort(404, 'Comprovante não encontrado');
         }
 
         return response()->file(storage_path('app/public/' . $passenger->receipt_path));
+    }
+
+    public function startReturn(Request $request)
+    {
+        $driverId = session('driver_id');
+
+        if (!$driverId) {
+            return response()->json(['success' => false, 'message' => 'Não autenticado'], 401);
+        }
+
+        $driver = Driver::findOrFail($driverId);
+
+        $validated = $request->validate([
+            'trip_date' => 'required|date',
+            'time_start' => 'required',
+        ]);
+
+        // Marcar que iniciou o retorno (salvar no session ou criar registro)
+        session(['return_started_driver_' . $driver->id => [
+            'date' => $validated['trip_date'],
+            'time' => $validated['time_start'],
+            'started_at' => now(),
+        ]]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Retorno iniciado! Agora as paradas de retorno serão exibidas para os passageiros.',
+        ]);
+    }
+
+    public function confirmStop(Request $request)
+    {
+        $driverId = session('driver_id');
+
+        if (!$driverId) {
+            return response()->json(['success' => false, 'message' => 'Não autenticado'], 401);
+        }
+
+        $driver = Driver::findOrFail($driverId);
+
+        $validated = $request->validate([
+            'stop_id' => 'required|exists:stops,id',
+            'trip_date' => 'required|date',
+            'time_start' => 'required',
+            'direction' => 'required|in:outbound,return',
+        ]);
+
+        // Criar ou atualizar progresso
+        $progress = TripProgress::updateOrCreate(
+            [
+                'driver_id' => $driver->id,
+                'stop_id' => $validated['stop_id'],
+                'trip_date' => $validated['trip_date'],
+                'time_start' => $validated['time_start'],
+                'direction' => $validated['direction'],
+            ],
+            [
+                'confirmed_at' => now(),
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Parada confirmada!',
+            'progress' => $progress,
+        ]);
     }
 }

@@ -10,6 +10,8 @@ class Passenger extends Model
     use HasFactory;
 
     protected $fillable = [
+        'driver_id',
+        'stop_id',
         'name',
         'email',
         'password',
@@ -32,4 +34,15 @@ class Passenger extends Model
         'boarded_at' => 'datetime',
         'boarded' => 'boolean',
     ];
+
+
+    public function driver()
+    {
+        return $this->belongsTo(Driver::class);
+    }
+
+    public function stop()
+    {
+        return $this->belongsTo(Stop::class);
+    }
 }

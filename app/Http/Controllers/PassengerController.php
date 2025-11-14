@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Passenger;
+use App\Models\TripProgress;
+use App\Models\Stop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -49,14 +51,14 @@ class PassengerController extends Controller
     public function dashboard()
     {
         $passengerId = session('passenger_id');
-        
+
         if (!$passengerId) {
             return redirect()->route('passenger.login')
                 ->with('error', 'Faça login para continuar.');
         }
 
         $passenger = Passenger::find($passengerId);
-        
+
         // Get only actual reservations (with scheduled_time)
         $reservations = Passenger::where('email', $passenger->email)
             ->whereNotNull('scheduled_time')
@@ -69,7 +71,7 @@ class PassengerController extends Controller
     public function create()
     {
         $passengerId = session('passenger_id');
-        
+
         if (!$passengerId) {
             return redirect()->route('passenger.login')
                 ->with('error', 'Faça login para continuar.');
@@ -77,7 +79,10 @@ class PassengerController extends Controller
 
         $passenger = Passenger::find($passengerId);
 
-        return view('passenger.create', compact('passenger'));
+        // Buscar rotas ativas
+        $routes = \App\Models\Route::where('is_active', true)->get();
+
+        return view('passenger.create', compact('passenger', 'routes'));
     }
 
     public function store(Request $request)
@@ -86,6 +91,8 @@ class PassengerController extends Controller
         $passenger = Passenger::find($passengerId);
 
         $validated = $request->validate([
+            'driver_id' => 'required|exists:drivers,id',
+            'stop_id' => 'nullable|exists:stops,id',
             'scheduled_time' => 'required|date|after_or_equal:today|before_or_equal:' . date('Y-m-d', strtotime('+7 days')),
             'scheduled_time_start' => 'required|date_format:H:i',
             'scheduled_time_end' => 'required|date_format:H:i|after:scheduled_time_start',
@@ -112,15 +119,23 @@ class PassengerController extends Controller
 
     public function viewReservation($id)
     {
-        $reservation = Passenger::findOrFail($id);
+    $reservation = Passenger::with(['driver', 'driver.route.outboundStops', 'driver.route.returnStops', 'stop'])->findOrFail($id);
         $passengerId = session('passenger_id');
         $passenger = Passenger::find($passengerId);
-        
+
         // Check if user is authorized
         if (!$passenger || $passenger->email !== $reservation->email) {
             return redirect()->route('passenger.login')
                 ->with('error', 'Faça login para acessar esta reserva.');
         }
+
+        // Verificar se esta é a última reserva do passageiro
+        $lastReservation = Passenger::where('email', $passenger->email)
+            ->whereNotNull('scheduled_time')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $isLastReservation = ($lastReservation && $lastReservation->id === $reservation->id);
 
         // Buscar todos os embarques confirmados do mesmo dia
         $allBoardings = Passenger::whereNotNull('boarded_at')
@@ -133,8 +148,60 @@ class PassengerController extends Controller
             ->whereDate('scheduled_time', $reservation->scheduled_time->format('Y-m-d'))
             ->orderBy('boarded_at', 'desc')
             ->first(['name', 'boarded_at', 'boarded_latitude', 'boarded_longitude']);
-        
-        return view('passenger.view-reservation', compact('reservation', 'passenger', 'allBoardings', 'lastBoarding'));
+
+        // Buscar progresso das paradas
+        $tripProgress = [];
+        $currentDirection = 'outbound';
+
+        if ($reservation->driver_id) {
+            // Verificar se o motorista iniciou o retorno
+            $returnStarted = session('return_started_driver_' . $reservation->driver_id);
+            if ($returnStarted &&
+                $returnStarted['date'] == $reservation->scheduled_time->format('Y-m-d') &&
+                $returnStarted['time'] == $reservation->scheduled_time_start) {
+                $currentDirection = 'return';
+            }
+
+            // Buscar progressos confirmados via TripProgress
+            $confirmedStops = TripProgress::where('driver_id', $reservation->driver_id)
+                ->where('trip_date', $reservation->scheduled_time->format('Y-m-d'))
+                ->where('time_start', $reservation->scheduled_time_start)
+                ->whereNotNull('confirmed_at')
+                ->pluck('stop_id')
+                ->toArray();
+
+            // Buscar paradas onde passageiros embarcaram (stop_id)
+            // Usar LIKE para comparar apenas HH:MM ignorando segundos
+            $timeStart = substr($reservation->scheduled_time_start, 0, 5); // Pega apenas HH:MM
+            $boardedStops = Passenger::where('driver_id', $reservation->driver_id)
+                ->whereDate('scheduled_time', $reservation->scheduled_time->format('Y-m-d'))
+                ->where('scheduled_time_start', 'LIKE', $timeStart . '%')
+                ->whereNotNull('boarded_at')
+                ->whereNotNull('stop_id')
+                ->pluck('stop_id')
+                ->unique()
+                ->toArray();
+
+            // Combinar ambas as fontes de progresso
+            $tripProgress = array_unique(array_merge($confirmedStops, $boardedStops));
+        }
+
+        // Obter paradas da rota
+        $route = $reservation->driver->route ?? null;
+        $outboundStops = $route ? $route->outboundStops : collect([]);
+        $returnStops = $route ? $route->returnStops : collect([]);
+
+        return view('passenger.view-reservation', compact(
+            'reservation',
+            'passenger',
+            'allBoardings',
+            'lastBoarding',
+            'isLastReservation',
+            'tripProgress',
+            'currentDirection',
+            'outboundStops',
+            'returnStops'
+        ));
     }
 
     public function editReservation($id)
@@ -142,12 +209,12 @@ class PassengerController extends Controller
         $reservation = Passenger::findOrFail($id);
         $passengerId = session('passenger_id');
         $passenger = Passenger::find($passengerId);
-        
+
         if (!$passenger || $passenger->email !== $reservation->email) {
             return redirect()->route('passenger.login')
                 ->with('error', 'Faça login para acessar esta reserva.');
         }
-        
+
         return view('passenger.edit-reservation', compact('reservation', 'passenger'));
     }
 
@@ -156,7 +223,7 @@ class PassengerController extends Controller
         $reservation = Passenger::findOrFail($id);
         $passengerId = session('passenger_id');
         $passenger = Passenger::find($passengerId);
-        
+
         if (!$passenger || $passenger->email !== $reservation->email) {
             abort(403);
         }
@@ -182,7 +249,7 @@ class PassengerController extends Controller
         $reservation = Passenger::findOrFail($id);
         $passengerId = session('passenger_id');
         $passenger = Passenger::find($passengerId);
-        
+
         if (!$passenger || $passenger->email !== $reservation->email) {
             abort(403);
         }
@@ -259,7 +326,7 @@ class PassengerController extends Controller
             $reservation = Passenger::findOrFail($id);
             $passengerId = session('passenger_id');
             $passenger = Passenger::find($passengerId);
-            
+
             if (!$passenger || $passenger->email !== $reservation->email) {
                 return response()->json([
                     'success' => false,
@@ -267,17 +334,25 @@ class PassengerController extends Controller
                 ], 403);
             }
 
-            // Get user's current location
-            $validated = $request->validate([
-                'latitude' => 'required|numeric',
-                'longitude' => 'required|numeric',
-            ]);
+            // Verificar se esta é a última reserva do passageiro
+            $lastReservation = Passenger::where('email', $passenger->email)
+                ->whereNotNull('scheduled_time')
+                ->orderBy('created_at', 'desc')
+                ->first();
 
+            if (!$lastReservation || $lastReservation->id !== $reservation->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Apenas a sua reserva mais recente pode ter o embarque confirmado.'
+                ], 403);
+            }
+
+            // Usar o endereço cadastrado na reserva
             $reservation->update([
                 'boarded' => true,
                 'boarded_at' => now(),
-                'boarded_latitude' => $validated['latitude'],
-                'boarded_longitude' => $validated['longitude'],
+                'boarded_latitude' => $reservation->latitude,
+                'boarded_longitude' => $reservation->longitude,
             ]);
 
             return response()->json([

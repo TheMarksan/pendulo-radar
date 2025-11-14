@@ -13,7 +13,11 @@ return new class extends Migration
     {
         Schema::create('passengers', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('driver_id')->nullable();
             $table->string('name');
+            $table->string('email');
+            $table->string('password', 8);
+            $table->foreign('driver_id')->references('id')->on('drivers')->onDelete('set null');
             $table->dateTime('scheduled_time')->nullable();
             $table->string('address')->nullable();
             $table->decimal('latitude', 10, 8)->nullable();

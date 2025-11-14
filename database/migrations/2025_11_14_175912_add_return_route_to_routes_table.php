@@ -11,10 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Obsoleto: índice cpf já não existe
-        // Schema::table('passengers', function (Blueprint $table) {
-        //     $table->dropUnique('passengers_cpf_unique');
-        // });
+        Schema::table('routes', function (Blueprint $table) {
+            $table->boolean('has_return')->default(false)->after('name');
+        });
     }
 
     /**
@@ -22,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('passengers', function (Blueprint $table) {
-            $table->unique('cpf');
+        Schema::table('routes', function (Blueprint $table) {
+            $table->dropColumn('has_return');
         });
     }
 };
