@@ -18,6 +18,36 @@
     }
 
     .back-link:hover {
+    .logout-btn {
+        background: #dc3545;
+        padding: 8px 12px;
+        text-decoration: none;
+        display: inline-block;
+        color: #fff;
+        border-radius: 4px;
+        font-size: 0.95em;
+        transition: background 0.2s;
+        margin-left: 10px;
+    }
+    .logout-btn:hover {
+        background: #b52a37;
+        color: #fff;
+    }
+
+    @media (max-width: 600px) {
+        .logout-btn {
+            padding: 7px 10px;
+            font-size: 0.85em;
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            margin: 0;
+        }
+        .header-actions {
+            position: relative;
+            min-height: 40px;
+        }
+    }
         text-decoration: underline;
     }
 
@@ -228,11 +258,9 @@
 
 @section('content')
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: relative;">
         <a href="{{ route('home') }}" class="back-link" style="margin: 0;">← Voltar</a>
-        <a href="{{ route('driver.logout') }}" class="btn" style="background: #dc3545; padding: 10px 20px; text-decoration: none; display: inline-block;">
-            🚪 Sair
-        </a>
+        <a href="{{ route('driver.logout') }}" class="logout-btn">🚪 Sair</a>
     </div>
 
     <h2 style="color: #343b71; font-size: 2em; margin-bottom: 20px;">
@@ -480,7 +508,7 @@ paymentFilter.addEventListener('change', filterPassengerList);
 
     async function initMap() {
         // Check if API key is configured
-        const apiKey = '{{ config('services.google_maps.api_key') }}';
+        const apiKey = '{{ config('services.google_maps.key') }}';
         if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY') {
             document.getElementById('map').innerHTML = '<div style="padding: 20px; text-align: center; color: #dc3545;"><strong>⚠️ Chave do Google Maps não configurada!</strong><br>Configure GOOGLE_MAPS_API_KEY no arquivo .env</div>';
             return;
@@ -726,7 +754,7 @@ paymentFilter.addEventListener('change', filterPassengerList);
     }
 </script>
 <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google_maps.api_key') }}&loading=async&callback=initMap">
+    src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google_maps.key') }}&loading=async&callback=initMap">
 </script>
 @endif
 @endsection
