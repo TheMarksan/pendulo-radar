@@ -23,6 +23,16 @@ class AppServiceProvider extends ServiceProvider
         // Força HTTPS em produção
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
+
+            // Confia em proxies (importante para Render)
+            Request::setTrustedProxies(
+                ['*'],
+                \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR |
+                \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST |
+                \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT |
+                \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO |
+                \Illuminate\Http\Request::HEADER_X_FORWARDED_AWS_ELB
+            );
         }
     }
 }
