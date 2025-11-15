@@ -12,17 +12,12 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        // Cria ou atualiza admin padrão
-        \App\Models\Admin::updateOrCreate(
-            [
-                'email' => 'admin@admin.com',
-            ],
-            [
-                'name' => 'Administrador',
-                'password' => \Illuminate\Support\Facades\Hash::make('admin123'),
-                'first_access' => false,
-            ]
-        );
+        \App\Models\Admin::create([
+            'name' => 'Administrador',
+            'email' => 'admin@admin.com',
+            'password' => \Illuminate\Support\Facades\Hash::make('admin123'),
+            'first_access' => false,
+        ]);
 
         // Criar uma rota padrão
         $route = \App\Models\Route::create([
@@ -38,3 +33,4 @@ class AdminSeeder extends Seeder
             'is_active' => true,
         ]);
     }
+}
