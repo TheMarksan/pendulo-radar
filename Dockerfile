@@ -30,18 +30,21 @@ RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
 echo "Waiting for database connection..."\n\
-sleep 3\n\
+sleep 5\n\
 \n\
-echo "Clearing cache..."\n\
-php artisan config:clear\n\
-php artisan cache:clear\n\
+echo "Clearing configuration cache..."\n\
+php artisan config:clear || true\n\
 \n\
 echo "Running migrations..."\n\
 php artisan migrate --force\n\
 \n\
+echo "Clearing application cache..."\n\
+php artisan cache:clear || true\n\
+php artisan view:clear || true\n\
+\n\
 echo "Caching configuration..."\n\
-php artisan config:cache\n\
-php artisan route:cache\n\
+php artisan config:cache || true\n\
+php artisan route:cache || true\n\
 \n\
 echo "Starting Laravel server..."\n\
 php artisan serve --host=0.0.0.0 --port=${PORT:-10000}\n\
