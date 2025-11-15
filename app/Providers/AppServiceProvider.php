@@ -24,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
 
+            // Força root URL com HTTPS
+            $this->app['url']->forceRootUrl(config('app.url'));
+
             // Confia em proxies (importante para Render)
             Request::setTrustedProxies(
                 ['*'],
