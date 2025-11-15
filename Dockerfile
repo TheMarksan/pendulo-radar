@@ -3,7 +3,7 @@ FROM php:8.2-cli
 
 # Instala dependências do sistema
 RUN apt-get update && apt-get install -y \
-    libpng-dev libonig-dev libxml2-xml zip unzip git curl \
+    libpng-dev libonig-dev libxml2-dev zip unzip git curl \
     libzip-dev libssl-dev libcurl4-openssl-dev \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
