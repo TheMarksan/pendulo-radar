@@ -81,4 +81,5 @@ RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache || true
 EXPOSE 10000
 
 # Usa o script de inicialização
-CMD ["/app/start.sh"]
+# Rodar migrations e seeders antes de iniciar o servidor
+CMD php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=10000
