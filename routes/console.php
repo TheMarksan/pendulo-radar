@@ -8,5 +8,3 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule daily reset at midnight
-Schedule::command('app:reset-daily')->dailyAt('00:00');
