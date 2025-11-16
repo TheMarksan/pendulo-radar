@@ -90,6 +90,7 @@ echo "\n[8/9] Optimizing application..."\n\
 php artisan config:cache 2>&1 || echo "Config cache failed (continuing...)"\n\
 php artisan route:cache 2>&1 || echo "Route cache failed (continuing...)"\n\
 php artisan view:cache 2>&1 || echo "View cache failed (continuing...)"\n\
+php artisan storage:link 2>&1 || echo "Storage link failed (continuing...)"\n\
 \n\
 echo "\n[9/9] Starting Laravel server..."\n\
 echo "================================="\n\
