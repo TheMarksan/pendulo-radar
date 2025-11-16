@@ -69,7 +69,7 @@
             <label for="stopTypeFilter" style="font-weight: 500; color: #343b71;">Filtrar por tipo:</label>
             <select id="stopTypeFilter" style="min-width: 120px; max-width: 180px; padding: 8px 12px; border: 2px solid #343b71; border-radius: 8px; font-size: 1em;">
                 <option value="all">Todas</option>
-                <option value="outbound">Ida</option>
+                <option value="outbound" selected>Ida</option>
                 <option value="return">Retorno</option>
             </select>
         </div>
@@ -118,7 +118,74 @@
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
-let map, marker, geocoder, autocomplete, stopsPolyline = null, stopsMarkers = [];
+var map, marker, geocoder, autocomplete, stopsPolyline = null, stopsMarkers = [];
+
+// Função global para desenhar os pins e linhas das paradas
+window.drawStopsPolyline = function drawStopsPolyline() {
+    // Limpa marcadores antigos
+    if (Array.isArray(stopsMarkers)) {
+        stopsMarkers.forEach(m => m.setMap && m.setMap(null));
+        stopsMarkers = [];
+    }
+    if (stopsPolyline) {
+        stopsPolyline.setMap(null);
+        stopsPolyline = null;
+    }
+    // Seleciona apenas as paradas visíveis (ordem DOM = ordem visual)
+    const allStops = Array.from(document.querySelectorAll('#stops-list .stop-item'));
+    const visibleStops = allStops.filter(el => el.style.display !== 'none').map((el, idx) => {
+        return {
+            lat: parseFloat(el.getAttribute('data-latitude')),
+            lng: parseFloat(el.getAttribute('data-longitude')),
+            name: el.querySelector('h4') ? el.querySelector('h4').textContent : '',
+            idx: idx
+        };
+    }).filter(s => !isNaN(s.lat) && !isNaN(s.lng));
+
+    // Centraliza o mapa nas paradas filtradas
+    if (visibleStops.length > 0 && map) {
+        const bounds = new google.maps.LatLngBounds();
+        visibleStops.forEach(s => bounds.extend({lat: s.lat, lng: s.lng}));
+        map.fitBounds(bounds);
+        if (visibleStops.length === 1) {
+            map.setZoom(16);
+        }
+    }
+
+    // Sempre usa google.maps.Marker com SVG customizado
+    if (window.google && window.google.maps && window.map) {
+        visibleStops.forEach((stop, idx) => {
+            const svg = `
+                <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="20" cy="20" r="16" fill="#343b71" stroke="#fff" stroke-width="3" />
+                  <text x="20" y="27" text-anchor="middle" font-size="18" font-family="Arial" fill="#fff">${idx+1}</text>
+                </svg>
+            `;
+            const icon = {
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+                scaledSize: new google.maps.Size(40, 40),
+                anchor: new google.maps.Point(20, 40)
+            };
+            const marker = new google.maps.Marker({
+                map: window.map,
+                position: { lat: stop.lat, lng: stop.lng },
+                title: stop.name,
+                icon: icon
+            });
+            stopsMarkers.push(marker);
+        });
+    }
+    if (visibleStops.length > 1 && window.google && window.google.maps) {
+        stopsPolyline = new google.maps.Polyline({
+            path: visibleStops.map(s => ({ lat: s.lat, lng: s.lng })),
+            geodesic: false,
+            strokeColor: '#343b71',
+            strokeOpacity: 1,
+            strokeWeight: 5
+        });
+        stopsPolyline.setMap(map);
+    }
+}
 
 function initMap() {
     geocoder = new google.maps.Geocoder();
@@ -127,16 +194,29 @@ function initMap() {
         zoom: 13,
         center: { lat: -9.7656, lng: -36.2451 }
     });
+    window.map = map;
 
     marker = new google.maps.Marker({
         map: map,
         draggable: true,
     });
 
+        // Redesenha pins ao redimensionar, expandir ou após idle
+        google.maps.event.addListener(map, 'idle', function() {
+            drawStopsPolyline();
+        });
+        google.maps.event.addListener(map, 'resize', function() {
+            drawStopsPolyline();
+        });
+        // Listener para fullscreenchange no elemento do mapa
+        mapEl.addEventListener('fullscreenchange', function() {
+            setTimeout(drawStopsPolyline, 200); // delay para garantir que o mapa já expandiu
+        });
+
     // Traçar linha ao iniciar
-    setTimeout(drawStopsPolyline, 500);
+    setTimeout(window.drawStopsPolyline, 500);
 // Função para traçar linha entre as paradas visíveis
-function drawStopsPolyline() {
+window.drawStopsPolyline = function drawStopsPolyline() {
     // Limpa marcadores antigos
     if (Array.isArray(stopsMarkers)) {
         stopsMarkers.forEach(m => m.setMap && m.setMap(null));
@@ -269,9 +349,12 @@ function drawStopsPolyline() {
 window.initMap = initMap;
 
 // Filtro de paradas por tipo (ida/retorno)
+
 document.addEventListener('DOMContentLoaded', function() {
     // Função para renumerar as paradas visíveis conforme o filtro
     function renumberStops() {
+        const stopTypeFilter = document.getElementById('stopTypeFilter');
+        if (!stopTypeFilter) return;
         const type = stopTypeFilter.value;
         let count = 1;
         document.querySelectorAll('#stops-list .stop-item').forEach(function(el) {
@@ -286,6 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const stopTypeFilter = document.getElementById('stopTypeFilter');
     const stopsList = document.getElementById('stops-list');
     function applyStopTypeFilter() {
+        if (!stopTypeFilter || !stopsList) return;
         const type = stopTypeFilter.value;
         // Seleciona todos os elementos de parada
         const items = stopsList.querySelectorAll('.stop-item');
@@ -298,24 +382,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         renumberStops();
-        setTimeout(drawStopsPolyline, 0); // Garante atualização do mapa após DOM
+        // Só desenha pins se o mapa já estiver inicializado
+        setTimeout(function() {
+            if (window.map && typeof window.drawStopsPolyline === 'function') {
+                window.drawStopsPolyline();
+            }
+        }, 0);
     }
-    stopTypeFilter.addEventListener('change', applyStopTypeFilter);
+    if (stopTypeFilter) stopTypeFilter.addEventListener('change', applyStopTypeFilter);
     // Aplica o filtro e a numeração ao carregar a página
+    // Força o filtro padrão para 'outbound' (ida) ao carregar
+    if (stopTypeFilter) stopTypeFilter.value = 'outbound';
     applyStopTypeFilter();
 
     // Traçar linha ao redimensionar
-    window.addEventListener('resize', drawStopsPolyline);
+    window.addEventListener('resize', function() {
+        if (window.map && typeof window.drawStopsPolyline === 'function') {
+            window.drawStopsPolyline();
+        }
+    });
     // Traçar linha ao alterar lista
     const polyObserver = new MutationObserver(function() {
         applyStopTypeFilter();
     });
-    polyObserver.observe(stopsList, { childList: true, subtree: false });
+    if (stopsList) polyObserver.observe(stopsList, { childList: true, subtree: false });
     // Sempre que a lista de paradas mudar, reaplica o filtro e a numeração
     const observer = new MutationObserver(function() {
         applyStopTypeFilter();
     });
-    observer.observe(stopsList, { childList: true, subtree: false });
+    if (stopsList) observer.observe(stopsList, { childList: true, subtree: false });
 });
 
 // Sortable para reordenar paradas

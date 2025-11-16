@@ -368,7 +368,90 @@
             </button>
         </div>
 
-        {{-- Progresso de paradas removido conforme solicitado --}}
+        {{-- Progresso de Paradas (Motorista) --}}
+        @php
+            $stops = $route && $route->has_return && request('direction', 'outbound') === 'return' ? $returnStops : $outboundStops;
+            // Encontrar a parada do último embarque
+            $lastBoardingStopId = $lastBoarding && $lastBoarding->stop ? $lastBoarding->stop->id : null;
+            $lastConfirmedIndex = -1;
+            foreach($stops as $idx => $stop) {
+                if ($lastBoardingStopId && $stop->id == $lastBoardingStopId) {
+                    $lastConfirmedIndex = $idx;
+                    break;
+                }
+                if (!$lastBoardingStopId && in_array($stop->id, $tripProgress)) {
+                    $lastConfirmedIndex = $idx;
+                }
+            }
+        @endphp
+        @if($stops && count($stops))
+        <div id="driver-progress-bar-container" style="overflow-x: auto; margin: 24px 0 16px 0; padding-bottom: 8px;">
+            <div id="driver-progress-bar" style="display: flex; gap: 0; min-width: 600px; border: 1px solid #bbb; border-radius: 8px; background: #fff; box-sizing: border-box; padding: 10px 0;">
+                @foreach($stops as $i => $stop)
+                    @php
+                        $isCurrent = $i === $lastConfirmedIndex && $lastConfirmedIndex >= 0;
+                        $isCompleted = $lastConfirmedIndex >= 0 && $i < $lastConfirmedIndex;
+                        $confirmed = $isCompleted || $isCurrent;
+                        $circleBg = $isCompleted ? '#28a745' : ($isCurrent ? '#fff3cd' : '#fff');
+                        $circleColor = $isCurrent ? '#856404' : ($isCompleted ? '#fff' : 'rgba(120,120,120,0.6)');
+                        $circleBorder = $isCurrent ? '#ffc107' : ($isCompleted ? '#28a745' : 'rgba(120,120,120,0.4)');
+                        $lineColor = $isCompleted ? '#28a745' : ($isCurrent ? '#ffc107' : 'rgba(120,120,120,0.3)');
+                    @endphp
+                    <div class="progress-stop-item{{ $isCurrent ? ' current' : '' }}" id="progress-stop-{{ $stop->id }}" style="flex: 0 0 180px; display: flex; flex-direction: column; align-items: center; position: relative;">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: {{ $circleBg }}; border: 2px solid {{ $circleBorder }}; display: flex; align-items: center; justify-content: center; color: {{ $circleColor }}; font-weight: bold; font-size: 1.1em;">
+                            @if($isCurrent)
+                                ●
+                            @elseif($isCompleted)
+                                ✓
+                            @else
+                                {{ $i+1 }}
+                            @endif
+                        </div>
+                        <div style="margin-top: 8px; text-align: center; font-size: 0.95em; color: #343b71; font-weight: 500; max-width: 140px; white-space: normal;">
+                            {{ $stop->name }}
+                        </div>
+                        <div style="margin-top: 2px; text-align: center; font-size: 0.8em; color: #888; max-width: 140px; white-space: normal;">
+                            {{ $stop->address }}
+                        </div>
+                        @if(!$loop->last)
+                        <div style="position: absolute; top: 16px; left: 100%; width: 44px; height: 2px; background: {{ $lineColor }}; z-index: 0;"></div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        <script>
+        // Scroll horizontal para última parada confirmada
+        document.addEventListener('DOMContentLoaded', function() {
+            var stops = @json($stops->pluck('id'));
+            var progress = @json($tripProgress);
+            if (progress.length > 0) {
+                var lastId = progress[progress.length-1];
+                var el = document.getElementById('progress-stop-' + lastId);
+                if (el) {
+                    var container = document.getElementById('driver-progress-bar-container');
+                    var left = el.offsetLeft - 60;
+                    container.scrollTo({ left: left > 0 ? left : 0, behavior: 'smooth' });
+                }
+            }
+        });
+        </script>
+        <style>
+        #driver-progress-bar-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        #driver-progress-bar-container::-webkit-scrollbar-thumb {
+            background: #c3c8e6;
+            border-radius: 4px;
+        }
+        .progress-stop-item.current > div:first-child {
+            background: #fff3cd !important;
+            color: #856404 !important;
+            border-color: #ffc107 !important;
+            font-size: 1.5em;
+        }
+        </style>
+        @endif
     </div>
 
     <div class="stats">
@@ -397,7 +480,7 @@
         <h3 style="color: #343b71; margin-bottom: 12px; font-size: 1.1em;">Lista de Passageiros</h3>
 
         <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 18px;">
-            <input id="searchInput" type="text" placeholder="Pesquisar por nome ou email..." style="flex: 1; min-width: 180px; max-width: 350px; padding: 10px 14px; border: 2px solid #343b71; border-radius: 8px; font-size: 1em;">
+            <input id="searchInput" type="text" placeholder="Pesquisar por nome ou local de parada..." style="flex: 1; min-width: 180px; max-width: 350px; padding: 10px 14px; border: 2px solid #343b71; border-radius: 8px; font-size: 1em;">
             <select id="paymentFilter" style="min-width: 160px; max-width: 200px; padding: 10px 14px; border: 2px solid #343b71; border-radius: 8px; font-size: 1em;">
                 <option value="all">Todos os Pagamentos</option>
                 <option value="pix">Pagamento PIX</option>
@@ -412,7 +495,12 @@
             </p>
         @else
             @foreach($passengers as $passenger)
-                <div class="passenger-item" data-name="{{ strtolower($passenger->name) }}" data-email="{{ strtolower($passenger->email) }}" data-payment="{{ $passenger->payment_method }}">
+                <div class="passenger-item"
+                    data-name="{{ strtolower($passenger->name) }}"
+                    data-email="{{ strtolower($passenger->email) }}"
+                    data-payment="{{ $passenger->payment_method }}"
+                    data-stop-name="{{ $passenger->stop ? strtolower($passenger->stop->name) : '' }}"
+                    data-stop-address="{{ $passenger->stop ? strtolower($passenger->stop->address) : strtolower($passenger->address) }}">
                     <div class="passenger-info">
                         <h4>
                             {{ $passenger->name }}
@@ -449,11 +537,36 @@
                     </div>
                     <div class="passenger-actions">
                         @if($passenger->payment_method === 'pix' && $passenger->receipt_path)
-                            <a href="{{ route('driver.receipt', $passenger->id) }}"
-                               target="_blank"
-                               class="btn btn-small">
+                            <button class="btn btn-small" onclick="openDriverReceiptModal('{{ asset('storage/' . $passenger->receipt_path) }}')">
                                 Ver Comprovante
-                            </a>
+                            </button>
+<!-- Modal para visualização ampliada do comprovante (motorista) -->
+<div id="driverReceiptModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); align-items:center; justify-content:center;">
+    <span onclick="closeDriverReceiptModal()" style="position:absolute; top:30px; right:40px; color:#fff; font-size:2.5em; cursor:pointer; font-weight:bold;">&times;</span>
+    <img id="driverModalReceiptImg" src="" alt="Comprovante Ampliado" style="max-width:90vw; max-height:85vh; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.4); display:block; margin:auto;">
+</div>
+@push('scripts')
+<script>
+function openDriverReceiptModal(imgUrl) {
+    var modal = document.getElementById('driverReceiptModal');
+    var img = document.getElementById('driverModalReceiptImg');
+    img.src = imgUrl;
+    modal.style.display = 'flex';
+}
+function closeDriverReceiptModal() {
+    document.getElementById('driverReceiptModal').style.display = 'none';
+}
+// Fechar modal ao clicar fora da imagem
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('driverReceiptModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeDriverReceiptModal();
+        });
+    }
+});
+</script>
+@endpush
                         @endif
                         <button
                             onclick="focusOnMarker({{ $passenger->latitude }}, {{ $passenger->longitude }})"
@@ -485,8 +598,15 @@ function filterPassengerList() {
     passengerItems.forEach(item => {
         const name = item.getAttribute('data-name');
         const email = item.getAttribute('data-email');
+        const stopName = item.getAttribute('data-stop-name') || '';
+        const stopAddress = item.getAttribute('data-stop-address') || '';
         const pay = item.getAttribute('data-payment');
-        let show = (name.includes(search) || email.includes(search));
+        let show = (
+            name.includes(search) ||
+            email.includes(search) ||
+            stopName.includes(search) ||
+            stopAddress.includes(search)
+        );
         if (payment === 'pix') {
             show = show && pay === 'pix';
         } else if (payment === 'no_pix') {

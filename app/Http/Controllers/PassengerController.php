@@ -301,7 +301,8 @@ class PassengerController extends Controller
         $passenger = Passenger::findOrFail($id);
 
         $request->validate([
-            'receipt' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            // max:10240 = 10MB (size in kilobytes)
+            'receipt' => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
 
         if ($request->hasFile('receipt')) {

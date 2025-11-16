@@ -1112,8 +1112,32 @@
                         Ver Comprovante
                     </a>
                 @else
-                    <img src="{{ asset('storage/' . $reservation->receipt_path) }}" alt="Comprovante" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <img src="{{ asset('storage/' . $reservation->receipt_path) }}" alt="Comprovante" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer;" onclick="openReceiptModal()">
                 @endif
+<!-- Modal para visualização ampliada do comprovante -->
+<div id="receiptModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); align-items:center; justify-content:center;">
+    <span onclick="closeReceiptModal()" style="position:absolute; top:30px; right:40px; color:#fff; font-size:2.5em; cursor:pointer; font-weight:bold;">&times;</span>
+    <img id="modalReceiptImg" src="{{ asset('storage/' . $reservation->receipt_path) }}" alt="Comprovante Ampliado" style="max-width:90vw; max-height:85vh; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.4); display:block; margin:auto;">
+</div>
+@push('scripts')
+<script>
+function openReceiptModal() {
+    document.getElementById('receiptModal').style.display = 'flex';
+}
+function closeReceiptModal() {
+    document.getElementById('receiptModal').style.display = 'none';
+}
+// Fechar modal ao clicar fora da imagem
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('receiptModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeReceiptModal();
+        });
+    }
+});
+</script>
+@endpush
             </div>
         @endif
 
@@ -1124,7 +1148,7 @@
                     <label class="file-upload-label" id="fileLabel">
                         <span style="font-size: 2em; display: block; margin-bottom: 10px;">📎</span>
                         <strong>Clique aqui para selecionar o comprovante</strong>
-                        <small>Formatos aceitos: JPG, PNG, PDF (máx. 2MB)</small>
+                        <small>Formatos aceitos: JPG, PNG, PDF (máx. 10MB)</small>
                     </label>
                     <input type="file" name="receipt" id="receipt" accept=".jpg,.jpeg,.png,.pdf" required>
                 </div>
