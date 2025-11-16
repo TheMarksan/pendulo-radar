@@ -1,3 +1,9 @@
+    @if(session('success'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('success')),'success');});</script>
+    @endif
+    @if(session('error'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('error')),'error');});</script>
+    @endif
 @extends('layouts.app')
 
 @section('title', 'Editar Reserva')
@@ -190,7 +196,7 @@
 <div class="content-wrapper">
 <div class="card">
     <a href="{{ route('passenger.dashboard') }}" class="back-link">← Voltar ao Dashboard</a>
-    
+
     <h2 style="color: #343b71; margin-bottom: 30px;">
         Editar Reserva #{{ str_pad($reservation->id, 6, '0', STR_PAD_LEFT) }}
     </h2>
@@ -211,9 +217,9 @@
 
         <div class="form-group">
             <label for="address-input">Endereço de Embarque *</label>
-            <input 
-                type="text" 
-                id="address-input" 
+            <input
+                type="text"
+                id="address-input"
                 placeholder="Digite o endereço ou local de embarque"
                 style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;"
                 value="{{ old('address', $reservation->address) }}"
@@ -221,9 +227,9 @@
             <div id="address-display" style="margin-top: 10px; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; color: #155724;">
                 <strong>✓ Endereço atual:</strong> <span id="address-text">{{ $reservation->address }}</span>
             </div>
-            <input 
-                type="hidden" 
-                id="address" 
+            <input
+                type="hidden"
+                id="address"
                 name="address"
                 value="{{ old('address', $reservation->address) }}"
             >
@@ -232,9 +238,9 @@
 
         <div class="form-group">
             <label for="payment_method">Forma de Pagamento *</label>
-            <select 
-                id="payment_method" 
-                name="payment_method" 
+            <select
+                id="payment_method"
+                name="payment_method"
                 required
                 style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;"
             >
@@ -247,11 +253,11 @@
 
         <div class="form-group">
             <label for="scheduled_time">Data da Reserva *</label>
-            <input 
-                type="date" 
-                id="scheduled_time" 
-                name="scheduled_time" 
-                required 
+            <input
+                type="date"
+                id="scheduled_time"
+                name="scheduled_time"
+                required
                 value="{{ old('scheduled_time', $reservation->scheduled_time ? $reservation->scheduled_time->format('Y-m-d') : '') }}"
                 min="{{ date('Y-m-d') }}"
                 max="{{ date('Y-m-d', strtotime('+7 days')) }}"
@@ -264,22 +270,22 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
                     <label for="scheduled_time_start" style="font-size: 0.9em; color: #666;">Das</label>
-                    <input 
-                        type="time" 
-                        id="scheduled_time_start" 
-                        name="scheduled_time_start" 
-                        required 
+                    <input
+                        type="time"
+                        id="scheduled_time_start"
+                        name="scheduled_time_start"
+                        required
                         value="{{ old('scheduled_time_start', $reservation->scheduled_time_start) }}"
                         style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;"
                     >
                 </div>
                 <div>
                     <label for="scheduled_time_end" style="font-size: 0.9em; color: #666;">Até</label>
-                    <input 
-                        type="time" 
-                        id="scheduled_time_end" 
-                        name="scheduled_time_end" 
-                        required 
+                    <input
+                        type="time"
+                        id="scheduled_time_end"
+                        name="scheduled_time_end"
+                        required
                         value="{{ old('scheduled_time_end', $reservation->scheduled_time_end) }}"
                         style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;"
                     >
@@ -360,7 +366,7 @@
 
         autocomplete.addListener('place_changed', () => {
             const place = autocomplete.getPlace();
-            
+
             if (!place.geometry || !place.geometry.location) {
                 console.log("No geometry for this place");
                 return;

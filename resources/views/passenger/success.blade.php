@@ -1,3 +1,9 @@
+    @if(session('success'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('success')),'success');});</script>
+    @endif
+    @if(session('error'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('error')),'error');});</script>
+    @endif
 @extends('layouts.app')
 
 @section('title', 'Reserva Confirmada')
@@ -150,9 +156,9 @@
             Sair 🚪
         </a>
     </div>
-    
+
     <div class="success-icon">✅</div>
-    
+
     <h2 style="text-align: center; color: #28a745; margin-bottom: 30px;">
         Sua reserva foi confirmada com sucesso!
     </h2>

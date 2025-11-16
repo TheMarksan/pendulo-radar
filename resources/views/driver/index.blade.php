@@ -361,12 +361,14 @@
     @endif
 
     <div style="position: relative;">
-        <div id="map"></div>
-        <div class="map-controls">
+        <div id="map" style="transition: height 0.3s, width 0.3s;"></div>
+        <div class="map-controls" style="margin-top: 48px;">
             <button type="button" class="btn" onclick="fitMapToMarkers()">
                 🗺️ Ver Todos
             </button>
         </div>
+
+        {{-- Progresso de paradas removido conforme solicitado --}}
     </div>
 
     <div class="stats">
@@ -467,6 +469,7 @@
 @section('scripts')
 @parent
 <script>
+// ...restaura funções originais confirmStop e addOccurrence se necessário...
 // Recarregar página automaticamente a cada 30 segundos
 setInterval(() => {
     window.location.reload();

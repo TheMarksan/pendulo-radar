@@ -1,3 +1,9 @@
+    @if(session('success'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('success')),'success');});</script>
+    @endif
+    @if(session('error'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('error')),'error');});</script>
+    @endif
 @extends('layouts.app')
 
 @section('title', 'Detalhes da Reserva')
@@ -876,7 +882,7 @@
     <div class="collapsible-box">
         <div class="collapsible-header" onclick="toggleCollapse('reservation-data')">
             <h3>
-                📋 Dados da Reserva
+                 Dados da Reserva
                 <span class="collapsible-hint">(clique para retrair)</span>
             </h3>
             <span class="collapse-icon" id="icon-reservation-data">▼</span>
@@ -928,7 +934,7 @@
     <div class="collapsible-box">
         <div class="collapsible-header" onclick="toggleCollapse('transport-info')">
             <h3>
-                🚗 Informações do Transporte
+                 Informações do Transporte
                 <span class="collapsible-hint">(clique para retrair)</span>
             </h3>
             <span class="collapse-icon" id="icon-transport-info">▼</span>
@@ -981,7 +987,9 @@
     </style>
 
     <!-- Trip Progress -->
-    @if($reservation->driver_id && ($outboundStops->count() > 0 || $returnStops->count() > 0))
+
+    {{-- Exibir progresso para todos que têm motorista e rota definida --}}
+    @if($reservation->driver && $reservation->driver->route && ($outboundStops->count() > 0 || $returnStops->count() > 0))
 
         <div class="trip-progress-box">
         <div class="trip-progress-header">

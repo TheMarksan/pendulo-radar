@@ -1,3 +1,9 @@
+    @if(session('success'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('success')),'success');});</script>
+    @endif
+    @if(session('error'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('error')),'error');});</script>
+    @endif
 @extends('layouts.app')
 
 @section('title', 'Passageiro')
@@ -210,7 +216,7 @@
 <div class="content-wrapper">
 <div class="card">
     <a href="{{ route('home') }}" class="back-link">← Voltar</a>
-    
+
     <h2 style="text-align: center; color: #343b71; margin-bottom: 20px;">
         O que você deseja fazer?
     </h2>

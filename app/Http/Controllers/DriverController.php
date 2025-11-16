@@ -128,12 +128,27 @@ class DriverController extends Controller
             ->orderBy('boarded_at', 'desc')
             ->first();
 
+        // Buscar rota e paradas
+        $route = $driver->route;
+        $outboundStops = $route ? $route->outboundStops()->get() : collect([]);
+        $returnStops = $route ? $route->returnStops()->get() : collect([]);
+
+        // Buscar progresso das paradas (todas as paradas confirmadas para este motorista)
+        $tripProgress = TripProgress::where('driver_id', $driver->id)
+            ->whereNotNull('confirmed_at')
+            ->pluck('stop_id')
+            ->toArray();
+
         return view('driver.index', [
             'passengers' => $passengers,
             'lastBoarding' => $lastBoarding,
             'driver' => $driver,
             'car' => null,
-            'noCar' => false
+            'noCar' => false,
+            'route' => $route,
+            'outboundStops' => $outboundStops,
+            'returnStops' => $returnStops,
+            'tripProgress' => $tripProgress
         ]);
     }
 

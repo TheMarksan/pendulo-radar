@@ -1,9 +1,11 @@
-<?php
 
+<?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PassengerController;
 use App\Http\Controllers\DriverController;
+// Admin - Painel geral de viagens dos motoristas
+Route::get('/admin/viagens-motoristas', [App\Http\Controllers\AdminController::class, 'allDriversDashboard'])->name('admin.allDriversDashboard');
 
 // Home - Choose role
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -40,9 +42,31 @@ Route::post('/passageiro/reserva/{id}/confirmar-embarque', [PassengerController:
 
 // API endpoint for drivers by route
 Route::get('/api/rotas/{routeId}/motoristas', function($routeId) {
-    $drivers = \App\Models\Driver::where('route_id', $routeId)
-        ->get(['id', 'name', 'departure_time', 'return_time']);
-    return response()->json($drivers);
+    $date = request('date');
+    $time = request('time');
+    $query = \App\Models\DriverSchedule::with('driver')
+        ->where('route_id', $routeId)
+        ->where('is_active', true);
+    if ($date) {
+        $query->where('date', $date);
+    }
+    if ($time) {
+        // Considerar horários a partir da hora cheia anterior
+        $timeBase = substr($time, 0, 2) . ':00';
+        $query->where('departure_time', '>=', $timeBase);
+    }
+    $schedules = $query->get();
+    $result = $schedules->map(function($schedule) {
+        return [
+            'schedule_id' => $schedule->id,
+            'driver_id' => $schedule->driver->id,
+            'driver_name' => $schedule->driver->name,
+            'date' => $schedule->date ? $schedule->date->format('Y-m-d') : null,
+            'departure_time' => $schedule->departure_time,
+            'return_time' => $schedule->return_time,
+        ];
+    });
+    return response()->json($result);
 });
 
 Route::get('/api/rotas/{routeId}/paradas', function($routeId) {

@@ -1,3 +1,9 @@
+    @if(session('success'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('success')),'success');});</script>
+    @endif
+    @if(session('error'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('error')),'error');});</script>
+    @endif
 @extends('layouts.app')
 
 @section('title', 'Acessar Reserva')
@@ -157,7 +163,7 @@
 <div class="content-wrapper">
 <div class="card login-card">
     <a href="{{ route('home') }}" class="back-link">← Voltar</a>
-    
+
     <h2 style="color: #343b71; margin-bottom: 20px; text-align: center;">
         🔐 Fazer Login
     </h2>
@@ -181,11 +187,11 @@
 
         <div class="form-group">
             <label for="email">Email</label>
-            <input 
-                type="email" 
-                id="email" 
-                name="email" 
-                required 
+            <input
+                type="email"
+                id="email"
+                name="email"
+                required
                 value="{{ old('email') }}"
                 placeholder="seu@email.com"
                 autofocus
@@ -194,11 +200,11 @@
 
         <div class="form-group">
             <label for="password">Senha</label>
-            <input 
-                type="password" 
-                id="password" 
-                name="password" 
-                required 
+            <input
+                type="password"
+                id="password"
+                name="password"
+                required
                 placeholder="Digite sua senha"
                 minlength="4"
                 maxlength="8"
