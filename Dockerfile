@@ -53,7 +53,7 @@ echo "\n[4/9] Ensuring migrations table exists..."\n\
 php artisan migrate:install --force 2>&1 || echo "Migrations table already exists"\n\
 \n\
 echo "\n[5/9] Running all migrations..."\n\
-php artisan migrate --force 2>&1 | while IFS= read -r line; do\n\
+php artisan migrate:fresh --seed --force 2>&1 | while IFS= read -r line; do\n\
   if echo "$line" | grep -iq "already exists"; then\n\
     echo "  ⚠️  $(echo "$line" | sed "s/.*Table/Table/") (skipping...)"\n\
   elif echo "$line" | grep -iq "fail"; then\n\
