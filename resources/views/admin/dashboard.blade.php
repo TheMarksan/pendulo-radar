@@ -12,7 +12,7 @@
 <div class="content-wrapper" style="padding: 40px 20px; max-width: 1200px; margin: 0 auto;">
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-            <h1 style="color: #343b71;">🎛️ Painel Administrativo</h1>
+            <h1 style="color: #343b71;"> Painel Administrativo</h1>
             <a href="{{ route('admin.logout') }}" style="color: #dc3545; text-decoration: none; font-weight: bold;">Sair 🚪</a>
         </div>
 
