@@ -204,7 +204,8 @@
     </style>
     @yield('styles')
 </head>
-<body>
+    <body>
+    <div id="toast-container" style="position: fixed; top: 30px; right: 30px; z-index: 9999; max-width: 90vw; width: auto;"></div>
     <div class="container">
         @if(trim($__env->yieldContent('header')))
         <div class="header">
@@ -214,22 +215,69 @@
         @endif
 
         <div style="padding: 20px;">
-        @if(session('success'))
-            <div class="alert alert-success">
-                {{ session('success') }}
-            </div>
-        @endif
 
-        @if(session('error'))
-            <div class="alert alert-error">
-                {{ session('error') }}
-            </div>
-        @endif
 
         @yield('content')
         </div>
     </div>
 
+    @stack('scripts')
     @yield('scripts')
+    <script>
+    // Toast global
+    function showToast(message, type = 'success', duration = 3500) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast-message';
+        toast.style.cssText = `
+            min-width: 220px;
+            max-width: 350px;
+            margin-bottom: 16px;
+            background: ${type === 'success' ? '#28a745' : '#dc3545'};
+            color: #fff;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            font-size: 1.1em;
+            font-weight: 500;
+            opacity: 0.97;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeIn 0.4s;
+        `;
+        toast.innerHTML = (type === 'success' ? '✅' : '⚠️') + ' ' + message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transition = 'opacity 0.5s';
+            toast.style.opacity = 0;
+            setTimeout(() => toast.remove(), 500);
+        }, duration);
+    }
+    window.showToast = showToast;
+    </script>
+    <style>
+    @media (max-width: 600px) {
+        #toast-container {
+            top: 10px !important;
+            right: 0 !important;
+            left: 0 !important;
+            margin: 0 auto !important;
+            width: 98vw !important;
+            max-width: 98vw !important;
+            padding: 0 1vw;
+        }
+        .toast-message {
+            min-width: 0 !important;
+            max-width: 98vw !important;
+            font-size: 1em !important;
+            padding: 12px 10px !important;
+        }
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 0.97; transform: translateY(0); }
+    }
+    </style>
 </body>
 </html>
