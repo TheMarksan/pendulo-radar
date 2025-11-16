@@ -188,6 +188,7 @@ window.drawStopsPolyline = function drawStopsPolyline() {
 }
 
 function initMap() {
+
     geocoder = new google.maps.Geocoder();
 
     map = new google.maps.Map(document.getElementById("map"), {
@@ -201,17 +202,22 @@ function initMap() {
         draggable: true,
     });
 
-        // Redesenha pins ao redimensionar, expandir ou após idle
-        google.maps.event.addListener(map, 'idle', function() {
-            drawStopsPolyline();
-        });
-        google.maps.event.addListener(map, 'resize', function() {
-            drawStopsPolyline();
-        });
-        // Listener para fullscreenchange no elemento do mapa
+    // Definir mapEl corretamente antes de usar
+    const mapEl = document.getElementById('map');
+
+    // Redesenha pins ao redimensionar, expandir ou após idle
+    google.maps.event.addListener(map, 'idle', function() {
+        drawStopsPolyline();
+    });
+    google.maps.event.addListener(map, 'resize', function() {
+        drawStopsPolyline();
+    });
+    // Listener para fullscreenchange no elemento do mapa
+    if (mapEl) {
         mapEl.addEventListener('fullscreenchange', function() {
             setTimeout(drawStopsPolyline, 200); // delay para garantir que o mapa já expandiu
         });
+    }
 
     // Traçar linha ao iniciar
     setTimeout(window.drawStopsPolyline, 500);
@@ -255,8 +261,7 @@ window.drawStopsPolyline = function drawStopsPolyline() {
         }
     }
 
-    if (window.google && window.google.maps && window.google.maps.marker) {
-        const { AdvancedMarkerElement } = window.google.maps.marker;
+    if (window.google && window.google.maps) {
         visibleStops.forEach((stop, idx) => {
             // SVG círculo numerado igual ao passageiro/create
             const svg = `
@@ -265,34 +270,17 @@ window.drawStopsPolyline = function drawStopsPolyline() {
                   <text x="20" y="27" text-anchor="middle" font-size="18" font-family="Arial" fill="#fff">${idx+1}</text>
                 </svg>
             `;
-            const markerDiv = document.createElement('div');
-            markerDiv.style.width = '40px';
-            markerDiv.style.height = '40px';
-            markerDiv.innerHTML = svg;
-            let marker;
-            if (AdvancedMarkerElement) {
-                marker = new AdvancedMarkerElement({
-                    map: map,
-                    position: { lat: stop.lat, lng: stop.lng },
-                    title: stop.name,
-                    content: markerDiv
-                });
-            } else {
-                marker = new google.maps.Marker({
-                    map: map,
-                    position: { lat: stop.lat, lng: stop.lng },
-                    title: stop.name,
-                    label: { text: String(idx+1), color: '#fff', fontWeight: 'bold', fontSize: '16px' },
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 16,
-                        fillColor: '#343b71',
-                        fillOpacity: 1,
-                        strokeColor: '#fff',
-                        strokeWeight: 3
-                    }
-                });
-            }
+            const icon = {
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+                scaledSize: new google.maps.Size(40, 40),
+                anchor: new google.maps.Point(20, 40)
+            };
+            const marker = new google.maps.Marker({
+                map: map,
+                position: { lat: stop.lat, lng: stop.lng },
+                title: stop.name,
+                icon: icon
+            });
             marker.stopData = stop;
             stopsMarkers.push(marker);
         });
