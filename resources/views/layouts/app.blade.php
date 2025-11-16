@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Pêndulo Radar')</title>
+    <link rel="icon" type="image/png" href="{{ asset('logos/pendulo_back_logo.png') }}">
     <style>
         * {
             margin: 0;
@@ -201,6 +202,62 @@
                 font-size: 0.9em;
             }
         }
+
+        .modern-header {
+            width: 100%;
+            background: #343b71;
+            padding: 15px 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            margin: 0 0 30px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            max-width: 1200px;
+            width: 100%;
+            padding: 0 30px;
+        }
+        .header-logo {
+            height: 100%;
+            max-height: 100px;
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+        }
+        .header-title {
+            color: white;
+            font-size: 2.2em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .header-divider {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 300;
+            font-size: 1.2em;
+        }
+        .header-subtitle {
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 400;
+        }
+        @media (max-width: 768px) {
+            .modern-header { padding: 12px 15px; }
+            .header-content { gap: 15px; padding: 0 15px; }
+            .header-logo { max-height: 70px; }
+            .header-title { font-size: 1.5em; gap: 10px; }
+        }
+        @media (max-width: 480px) {
+            .modern-header { padding: 10px 15px; }
+            .header-logo { max-height: 50px; }
+            .header-title { font-size: 1.2em; }
+        }
     </style>
     @yield('styles')
 </head>
@@ -214,12 +271,27 @@
         </div>
         @endif
 
+        <div class="modern-header">
+            <div class="header-content">
+                <img src="{{ asset('logos/pendulo_transparent.png') }}" alt="Pendulo Radar" class="header-logo">
+                <div class="header-title">
+                    <span class="header-divider">|</span>
+                    <span class="header-subtitle">Reservas</span>
+                </div>
+            </div>
+        </div>
+
         <div style="padding: 20px;">
 
 
         @yield('content')
         </div>
     </div>
+
+    <footer style="width:100%;text-align:center;padding:24px 0 12px 0;color:#343b71;font-size:1.05em;opacity:0.85;">
+        <div style="margin-bottom:4px;">Powered by <b>Pendulo</b></div>
+        <div style="font-size:0.95em;color:#666;">Projeto com fins acadêmicos</div>
+    </footer>
 
     @stack('scripts')
     @yield('scripts')

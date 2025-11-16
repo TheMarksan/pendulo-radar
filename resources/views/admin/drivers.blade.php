@@ -11,6 +11,28 @@
                 ← Voltar
             </a>
         </div>
+        <form method="GET" action="{{ route('admin.drivers') }}" style="margin-bottom: 24px; max-width: 400px;">
+            <input type="text" id="searchInput" name="search" value="{{ request('search') }}" placeholder="Pesquisar por nome, email ou telefone..." style="width: 100%; padding: 10px 14px; border: 1.5px solid #343b71; border-radius: 6px; font-size: 1em; color: #343b71; background: #e8f0ff;">
+        </form>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const tableRows = document.querySelectorAll('tbody tr');
+            searchInput.addEventListener('input', function() {
+                const value = this.value.toLowerCase();
+                tableRows.forEach(row => {
+                    const name = row.querySelector('td:nth-child(1)')?.textContent.toLowerCase() || '';
+                    const email = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+                    const phone = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+                    if (name.includes(value) || email.includes(value) || phone.includes(value)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        });
+        </script>
 
         @if(session('success'))
             <div class="alert alert-success" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -59,13 +81,21 @@
                                 </a>
                             </td>
                             <td style="padding: 15px; text-align: center;">
-                                <form action="{{ route('admin.drivers.delete', $driver->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza? Isso excluirá todos os carros deste motorista.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em;">
-                                        🗑️ Excluir
-                                    </button>
-                                </form>
+                                <div style="display: flex; gap: 10px; justify-content: center;">
+                                    <form action="{{ route('admin.drivers.delete', $driver->id) }}" method="POST" style="display: inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" style="background: #dc3545; color: white; border: none; width: 120px; padding: 8px 0; border-radius: 6px; cursor: pointer; font-size: 0.9em; text-align: center;">
+                                            🗑️ Excluir
+                                        </button>
+                                    </form>
+                                    <form action="{{ route('admin.drivers.reset', $driver->id) }}" method="POST" style="display: inline;">
+                                        @csrf
+                                        <button type="submit" style="background: #343b71; color: white; border: none; width: 120px; padding: 8px 0; border-radius: 6px; cursor: pointer; font-size: 0.9em; text-align: center;">
+                                            🔄 Resetar Acesso
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty

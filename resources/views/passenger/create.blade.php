@@ -1,4 +1,4 @@
-    @if(session('success'))
+@if(session('success'))
         <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('success')),'success');});</script>
     @endif
     @if(session('error'))
@@ -226,16 +226,6 @@
 @endsection
 
 @section('content')
-<div class="modern-header">
-    <div class="header-content">
-        <img src="{{ asset('logos/pendulo_transparent.png') }}" alt="Pendulo Radar" class="header-logo">
-        <div class="header-title">
-            <span class="header-divider">|</span>
-            <span class="header-subtitle">Reservas</span>
-        </div>
-    </div>
-</div>
-
 <div class="content-wrapper">
 <div class="card">
     <a href="{{ route('passenger.dashboard') }}" class="back-link">← Voltar ao Dashboard</a>
