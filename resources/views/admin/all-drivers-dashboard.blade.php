@@ -26,6 +26,14 @@
 @endsection
 
 @section('content')
+@push('scripts')
+<script>
+// Recarregar página automaticamente a cada 30 segundos para atualizar progresso
+setInterval(() => {
+    window.location.reload();
+}, 30000);
+</script>
+@endpush
 <div class="card">
     <div style="margin-bottom: 18px;">
         <a href="{{ route('admin.dashboard') }}" class="back-link" style="color: #343b71; text-decoration: none; font-weight: bold; font-size: 1.05em;">← Voltar ao Dashboard</a>
