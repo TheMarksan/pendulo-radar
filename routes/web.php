@@ -92,6 +92,8 @@ Route::get('/motorista/login', [DriverController::class, 'login'])->name('driver
 Route::post('/motorista/login', [DriverController::class, 'authenticate'])->name('driver.authenticate');
 Route::get('/motorista/logout', [DriverController::class, 'logout'])->name('driver.logout');
 Route::get('/motorista/dashboard', [DriverController::class, 'dashboard'])->name('driver.dashboard');
+Route::get('/motorista/primeiro-acesso', [DriverController::class, 'firstAccess'])->name('driver.first.access');
+Route::post('/motorista/primeiro-acesso', [DriverController::class, 'updateFirstAccess'])->name('driver.update.first.access');
 Route::get('/motorista/comprovante/{id}', [DriverController::class, 'viewReceipt'])->name('driver.receipt');
 Route::post('/motorista/iniciar-retorno', [DriverController::class, 'startReturn'])->name('driver.start.return');
 Route::post('/motorista/confirmar-parada', [DriverController::class, 'confirmStop'])->name('driver.confirm.stop');
