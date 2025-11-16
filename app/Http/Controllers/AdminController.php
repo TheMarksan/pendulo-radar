@@ -14,6 +14,40 @@ use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
+    // ...existing code...
+    // Painel geral de viagens dos motoristas
+    public function allDriversDashboard(Request $request)
+    {
+        $adminId = session('admin_id');
+        if (!$adminId) {
+            return redirect()->route('admin.login');
+        }
+        $drivers = \App\Models\Driver::orderBy('name')->get();
+        $selectedDriver = null;
+        $passengers = collect();
+        $route = null;
+        $outboundStops = collect();
+        $returnStops = collect();
+        $tripProgress = [];
+        if ($request->driver_id) {
+            $selectedDriver = \App\Models\Driver::find($request->driver_id);
+            if ($selectedDriver) {
+                $route = $selectedDriver->route;
+                $outboundStops = $route ? $route->outboundStops()->get() : collect();
+                $returnStops = $route ? $route->returnStops()->get() : collect();
+                $passengers = \App\Models\Passenger::with('stop')
+                    ->where('driver_id', $selectedDriver->id)
+                    ->orderBy('scheduled_time')
+                    ->orderBy('scheduled_time_start')
+                    ->get();
+                $tripProgress = \App\Models\TripProgress::where('driver_id', $selectedDriver->id)
+                    ->whereNotNull('confirmed_at')
+                    ->pluck('stop_id')
+                    ->toArray();
+            }
+        }
+        return view('admin.all-drivers-dashboard', compact('drivers', 'selectedDriver', 'passengers', 'route', 'outboundStops', 'returnStops', 'tripProgress'));
+    }
     // Login
     public function login()
     {
@@ -361,15 +395,46 @@ class AdminController extends Controller
         if (!$adminId) {
             return redirect()->route('admin.login');
         }
-        $request->validate([
-            'departure_time' => 'required',
-            'return_time' => 'required',
-        ]);
         $driver = \App\Models\Driver::findOrFail($driverId);
-        $driver->departure_time = $request->departure_time;
-        $driver->return_time = $request->return_time;
-        $driver->save();
-        return redirect()->route('admin.drivers')->with('success', 'Horários atualizados com sucesso!');
+
+        $action = $request->input('action');
+        if ($action === 'add') {
+            $request->validate([
+                'date' => 'required|date',
+                'departure_time' => 'required',
+                // 'return_time' => 'nullable',
+            ]);
+            $driver->schedules()->create([
+                'route_id' => $driver->route_id,
+                'date' => $request->date,
+                'departure_time' => $request->departure_time,
+                'return_time' => $request->return_time,
+                'is_active' => true,
+            ]);
+            return back()->with('success', 'Horário adicionado com sucesso!');
+        } elseif ($action === 'edit') {
+            $request->validate([
+                'schedule_id' => 'required|exists:driver_schedules,id',
+                'date' => 'required|date',
+                'departure_time' => 'required',
+                // 'return_time' => 'nullable',
+            ]);
+            $schedule = $driver->schedules()->findOrFail($request->schedule_id);
+            $schedule->date = $request->date;
+            $schedule->departure_time = $request->departure_time;
+            $schedule->return_time = $request->return_time;
+            $schedule->is_active = $request->has('is_active');
+            $schedule->save();
+            return back()->with('success', 'Horário atualizado com sucesso!');
+        } elseif ($action === 'delete') {
+            $request->validate([
+                'schedule_id' => 'required|exists:driver_schedules,id',
+            ]);
+            $schedule = $driver->schedules()->findOrFail($request->schedule_id);
+            $schedule->delete();
+            return back()->with('success', 'Horário excluído com sucesso!');
+        }
+        return back()->with('error', 'Ação inválida.');
     }
 }
 

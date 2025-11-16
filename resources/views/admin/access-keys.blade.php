@@ -1,3 +1,9 @@
+    @if(session('success'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('success')),'success');});</script>
+    @endif
+    @if(session('error'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('error')),'error');});</script>
+    @endif
 @extends('layouts.app')
 
 @section('title', 'Chaves de Acesso')

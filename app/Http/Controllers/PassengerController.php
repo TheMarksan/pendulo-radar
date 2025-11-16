@@ -91,10 +91,8 @@ class PassengerController extends Controller
         $passenger = Passenger::find($passengerId);
 
         $validated = $request->validate([
-            'driver_id' => 'required|exists:drivers,id',
+            'schedule_id' => 'required|exists:driver_schedules,id',
             'stop_id' => 'nullable|exists:stops,id',
-            'scheduled_time' => 'required|date|after_or_equal:today|before_or_equal:' . date('Y-m-d', strtotime('+7 days')),
-            'scheduled_time_start' => 'required|date_format:H:i',
             'scheduled_time_end' => 'required|date_format:H:i|after:scheduled_time_start',
             'address' => 'required|string',
             'latitude' => 'required|numeric',
@@ -102,6 +100,11 @@ class PassengerController extends Controller
             'payment_method' => 'required|in:pix,dinheiro,vale',
         ]);
 
+        $schedule = \App\Models\DriverSchedule::with('driver')->findOrFail($request->schedule_id);
+
+        $validated['driver_id'] = $schedule->driver_id;
+        $validated['scheduled_time'] = $schedule->date;
+        $validated['scheduled_time_start'] = $schedule->departure_time;
         $validated['name'] = $passenger->name;
         $validated['email'] = $passenger->email;
         $validated['password'] = $passenger->password;
@@ -162,20 +165,14 @@ class PassengerController extends Controller
                 $currentDirection = 'return';
             }
 
-            // Buscar progressos confirmados via TripProgress
+            // Buscar progressos confirmados via TripProgress (apenas pelo driver_id)
             $confirmedStops = TripProgress::where('driver_id', $reservation->driver_id)
-                ->where('trip_date', $reservation->scheduled_time->format('Y-m-d'))
-                ->where('time_start', $reservation->scheduled_time_start)
                 ->whereNotNull('confirmed_at')
                 ->pluck('stop_id')
                 ->toArray();
 
-            // Buscar paradas onde passageiros embarcaram (stop_id)
-            // Usar LIKE para comparar apenas HH:MM ignorando segundos
-            $timeStart = substr($reservation->scheduled_time_start, 0, 5); // Pega apenas HH:MM
+            // Buscar paradas onde passageiros embarcaram (stop_id) apenas pelo driver_id
             $boardedStops = Passenger::where('driver_id', $reservation->driver_id)
-                ->whereDate('scheduled_time', $reservation->scheduled_time->format('Y-m-d'))
-                ->where('scheduled_time_start', 'LIKE', $timeStart . '%')
                 ->whereNotNull('boarded_at')
                 ->whereNotNull('stop_id')
                 ->pluck('stop_id')

@@ -1,3 +1,9 @@
+    @if(session('success'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('success')),'success');});</script>
+    @endif
+    @if(session('error'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('error')),'error');});</script>
+    @endif
 @extends('layouts.app')
 
 @section('title', 'Admin Dashboard')
@@ -30,6 +36,10 @@
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+            <a href="{{ route('admin.allDriversDashboard') }}" class="btn" style="padding: 30px; text-align: center; text-decoration: none; background: #343b71; color: #fff;">
+                <div style="font-size: 3em; margin-bottom: 10px;">🚌</div>
+                <strong>Painel Geral dos Motoristas</strong>
+            </a>
             <a href="{{ route('admin.users') }}" class="btn" style="padding: 30px; text-align: center; text-decoration: none;">
                 <div style="font-size: 3em; margin-bottom: 10px;">👥</div>
                 <strong>Gerenciar Usuários</strong>

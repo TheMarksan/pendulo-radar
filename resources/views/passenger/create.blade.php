@@ -1,3 +1,9 @@
+    @if(session('success'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('success')),'success');});</script>
+    @endif
+    @if(session('error'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('error')),'error');});</script>
+    @endif
 @extends('layouts.app')
 
 @section('title', 'Reservar Passagem')
@@ -238,14 +244,14 @@
         Nova Reserva - {{ $passenger->name }}
     </h2>
 
+    @if(session('success'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('success')),'success');});</script>
+    @endif
+    @if(session('error'))
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast(@json(session('error')),'error');});</script>
+    @endif
     @if($errors->any())
-        <div class="alert alert-error">
-            <ul style="margin-left: 20px;">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
+        <script>window.addEventListener('DOMContentLoaded',function(){showToast('Preencha todos os campos obrigatórios.','error');});</script>
     @endif
 
     <form action="{{ route('passenger.store') }}" method="POST" id="passengerForm">
@@ -265,23 +271,47 @@
                 @endforeach
             </select>
             <small style="color: #666; display: block; margin-top: 5px;">
-                Primeiro escolha o tipo de viagem e a rota
+                Primeiro escolha a rota
             </small>
         </div>
 
-        <div class="form-group">
-            <label for="driver_id">Escolha o Motorista *</label>
+        <div class="form-group" id="date-time-group" style="display: none;">
+            <label for="scheduled_time">Data da Reserva *</label>
+            <input
+                type="date"
+                id="scheduled_time"
+                name="scheduled_time"
+                required
+                value="{{ old('scheduled_time') }}"
+                min="{{ date('Y-m-d') }}"
+                max="{{ date('Y-m-d', strtotime('+7 days')) }}"
+            >
+            <small style="color: #666; display: block; margin-top: 5px;">Reservas permitidas até 7 dias</small>
+
+            <label for="scheduled_time_start" style="margin-top: 15px;">Horário desejado *</label>
+            <input
+                type="time"
+                id="scheduled_time_start"
+                name="scheduled_time_start"
+                required
+                value="{{ old('scheduled_time_start') }}"
+            >
+            <small style="color: #666; display: block; margin-top: 5px;">Apenas motoristas com saída a partir desse horário aparecerão</small>
+        </div>
+
+        <div class="form-group" id="driver-group" style="display: none;">
+            <label for="schedule_id">Escolha o Motorista *</label>
             <select
-                id="driver_id"
-                name="driver_id"
+                id="schedule_id"
+                name="schedule_id"
                 required
                 disabled
                 style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;"
             >
-                <option value="">Selecione uma rota primeiro</option>
+                <option value="">Selecione data e horário primeiro</option>
             </select>
             <small style="color: #666; display: block; margin-top: 5px;">
-                Os motoristas disponíveis aparecerão após selecionar a rota
+                Os motoristas disponíveis aparecerão após selecionar data e horário
             </small>
         </div>
 
@@ -340,43 +370,14 @@
         </div>
 
         <div class="form-group">
-            <label for="scheduled_time">Data da Reserva *</label>
+            <label for="scheduled_time_end">Horário Final *</label>
             <input
-                type="date"
-                id="scheduled_time"
-                name="scheduled_time"
+                type="time"
+                id="scheduled_time_end"
+                name="scheduled_time_end"
                 required
-                value="{{ old('scheduled_time') }}"
-                min="{{ date('Y-m-d') }}"
-                max="{{ date('Y-m-d', strtotime('+7 days')) }}"
+                value="{{ old('scheduled_time_end') }}"
             >
-            <small style="color: #666; display: block; margin-top: 5px;">Reservas permitidas até 7 dias</small>
-        </div>
-
-        <div class="form-group">
-            <label for="scheduled_time_start">Intervalo de Horário *</label>
-            <div class="time-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; box-sizing: border-box;">
-                <div style="min-width: 0;">
-                    <label for="scheduled_time_start" style="font-size: 0.9em; color: #666;">Das</label>
-                    <input
-                        type="time"
-                        id="scheduled_time_start"
-                        name="scheduled_time_start"
-                        required
-                        value="{{ old('scheduled_time_start') }}"
-                    >
-                </div>
-                <div style="min-width: 0;">
-                    <label for="scheduled_time_end" style="font-size: 0.9em; color: #666;">Até</label>
-                    <input
-                        type="time"
-                        id="scheduled_time_end"
-                        name="scheduled_time_end"
-                        required
-                        value="{{ old('scheduled_time_end') }}"
-                    >
-                </div>
-            </div>
             <small style="color: #666; display: block; margin-top: 5px;">Horário aproximado em que estará no ponto</small>
         </div>
 
@@ -393,6 +394,151 @@
 
 @section('scripts')
 <script>
+// Lógica para exibir campos de data/horário após rota, e buscar motoristas após data/horário
+document.addEventListener('DOMContentLoaded', function() {
+    const routeSelect = document.getElementById('route_id');
+    const dateTimeGroup = document.getElementById('date-time-group');
+    const driverGroup = document.getElementById('driver-group');
+    const dateInput = document.getElementById('scheduled_time');
+    const timeInput = document.getElementById('scheduled_time_start');
+    const driverSelect = document.getElementById('schedule_id');
+
+    function resetDrivers() {
+        driverSelect.innerHTML = '<option value="">Selecione data e horário primeiro</option>';
+        driverSelect.disabled = true;
+        driverGroup.style.display = 'none';
+        // Esconde também o grupo de parada/endereço
+        const stopGroup = document.getElementById('stop-selection-group');
+        if (stopGroup) stopGroup.style.display = 'none';
+    }
+
+    routeSelect.addEventListener('change', function() {
+        if (this.value) {
+            dateTimeGroup.style.display = '';
+        } else {
+            dateTimeGroup.style.display = 'none';
+            resetDrivers();
+        }
+    });
+
+    function fetchDrivers() {
+        const routeId = routeSelect.value;
+        const date = dateInput.value;
+        const time = timeInput.value;
+        if (!routeId || !date || !time) {
+            resetDrivers();
+            return;
+        }
+        driverSelect.innerHTML = '<option value="">Carregando...</option>';
+        driverSelect.disabled = true;
+        driverGroup.style.display = '';
+        fetch(`/api/rotas/${routeId}/motoristas?date=${date}&time=${time}`)
+            .then(res => res.json())
+            .then(drivers => {
+                if (!drivers.length) {
+                    driverSelect.innerHTML = '<option value="">Nenhum motorista disponível para este horário</option>';
+                    driverSelect.disabled = true;
+                    return;
+                }
+                driverSelect.innerHTML = '<option value="">Selecione o motorista e horário</option>';
+                drivers.forEach(sch => {
+                    const opt = document.createElement('option');
+                    opt.value = sch.schedule_id;
+                    opt.textContent = `${sch.driver_name} (Saída: ${sch.departure_time}${sch.return_time ? ', Retorno: ' + sch.return_time : ''})`;
+                    driverSelect.appendChild(opt);
+                });
+                driverSelect.disabled = false;
+            })
+            .catch(() => {
+                driverSelect.innerHTML = '<option value="">Erro ao buscar motoristas</option>';
+                driverSelect.disabled = true;
+            });
+    }
+
+    dateInput.addEventListener('change', fetchDrivers);
+    timeInput.addEventListener('change', fetchDrivers);
+
+    // Ao selecionar motorista (schedule_id), buscar paradas da rota e exibir grupo de parada/endereço
+    // Garante que clearAddress está no escopo
+    function clearAddress() {
+        document.getElementById('stop_id').value = '';
+        document.getElementById('address').value = '';
+        document.getElementById('latitude').value = '';
+        document.getElementById('longitude').value = '';
+        if (typeof selectedStopData !== 'undefined') selectedStopData = null;
+    }
+
+    driverSelect.addEventListener('change', async function() {
+        const stopGroup = document.getElementById('stop-selection-group');
+        const stopsList = document.getElementById('stops-list');
+        const stopSearchInput = document.getElementById('stopSearchInput');
+        const routeId = routeSelect.value;
+        clearAddress();
+        // Sempre mostrar o grupo de parada/endereço ao selecionar motorista
+        stopGroup.style.display = 'block';
+        if (!this.value || !routeId) {
+            // Esconde o grupo se não houver seleção válida
+            stopGroup.style.display = 'none';
+            return;
+        }
+        try {
+            const response = await fetch(`/api/rotas/${routeId}/paradas`);
+            let stops = await response.json();
+            // Filtro por tipo de viagem (ida/retorno)
+            const directionSelect = document.getElementById('direction');
+            function filterStopsByDirection(stopsArr) {
+                const direction = directionSelect.value;
+                return stopsArr.filter(stop => !stop.type || stop.type === direction);
+            }
+            let allStops = filterStopsByDirection(stops);
+            function renderStops(filter = '') {
+                stopsList.innerHTML = '';
+                const filtered = allStops.filter(stop =>
+                    stop.name.toLowerCase().includes(filter) ||
+                    stop.address.toLowerCase().includes(filter)
+                );
+                filtered.forEach(stop => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'stop-btn';
+                    const idx = allStops.indexOf(stop);
+                    btn.innerHTML = `<span style=\"display:inline-block;width:28px;height:28px;background:#343b71;color:#fff;border-radius:50%;text-align:center;line-height:28px;font-weight:bold;margin-right:8px;\">${idx+1}</span> <strong>${stop.name}</strong><br><small>${stop.address}</small>`;
+                    btn.style.cssText = 'padding: 12px; border: 2px solid #ddd; background: white; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.3s;';
+                    btn.addEventListener('click', function() {
+                        selectStop(stop);
+                        document.querySelectorAll('.stop-btn').forEach(b => {
+                            b.style.border = '2px solid #ddd';
+                            b.style.background = 'white';
+                        });
+                        this.style.border = '2px solid #28a745';
+                        this.style.background = '#d4edda';
+                    });
+                    stopsList.appendChild(btn);
+                });
+            }
+            renderStops();
+            // Remover listeners antigos para evitar múltiplas execuções
+            stopSearchInput.oninput = function() {
+                renderStops(this.value.trim().toLowerCase());
+            };
+            directionSelect.onchange = function() {
+                allStops = filterStopsByDirection(stops);
+                renderStops(stopSearchInput.value.trim().toLowerCase());
+                displayStopsOnMap(allStops);
+            };
+            displayStopsOnMap(allStops);
+            // Sempre mostrar seleção de parada/endereço ao trocar motorista
+            showStopSelection();
+            // Corrigir alternância de endereço customizado
+            document.getElementById('use-stop-btn').onclick = showStopSelection;
+            document.getElementById('use-custom-btn').onclick = showCustomAddress;
+        } catch (error) {
+            // Mesmo em erro, mostrar o grupo para permitir digitar endereço
+            stopGroup.style.display = 'block';
+            showStopSelection();
+        }
+    });
+});
     let map;
     let mapCustom;
     let marker;
@@ -651,82 +797,7 @@
         });
 
         // Driver selection handler
-        document.getElementById('driver_id').addEventListener('change', async function() {
-            const driverId = this.value;
-            const routeId = document.getElementById('route_id').value;
-            const stopGroup = document.getElementById('stop-selection-group');
-            const stopsList = document.getElementById('stops-list');
-            const stopSearchInput = document.getElementById('stopSearchInput');
-
-            clearAddress();
-
-            if (!driverId || !routeId) {
-                stopGroup.style.display = 'none';
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/rotas/${routeId}/paradas`);
-                let stops = await response.json();
-
-                // Filtro por tipo de viagem (ida/retorno)
-                const directionSelect = document.getElementById('direction');
-                function filterStopsByDirection(stopsArr) {
-                    const direction = directionSelect.value;
-                    return stopsArr.filter(stop => !stop.type || stop.type === direction);
-                }
-                let allStops = filterStopsByDirection(stops);
-
-                function renderStops(filter = '') {
-                    stopsList.innerHTML = '';
-                    const filtered = allStops.filter(stop =>
-                        stop.name.toLowerCase().includes(filter) ||
-                        stop.address.toLowerCase().includes(filter)
-                    );
-                    filtered.forEach(stop => {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'stop-btn';
-                        // Adiciona numeração igual ao mapa
-                        const idx = allStops.indexOf(stop);
-                        btn.innerHTML = `<span style="display:inline-block;width:28px;height:28px;background:#343b71;color:#fff;border-radius:50%;text-align:center;line-height:28px;font-weight:bold;margin-right:8px;">${idx+1}</span> <strong>${stop.name}</strong><br><small>${stop.address}</small>`;
-                        btn.style.cssText = 'padding: 12px; border: 2px solid #ddd; background: white; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.3s;';
-
-                        btn.addEventListener('click', function() {
-                            selectStop(stop);
-                            document.querySelectorAll('.stop-btn').forEach(b => {
-                                b.style.border = '2px solid #ddd';
-                                b.style.background = 'white';
-                            });
-                            this.style.border = '2px solid #28a745';
-                            this.style.background = '#d4edda';
-                        });
-
-                        stopsList.appendChild(btn);
-                    });
-                }
-
-                renderStops();
-
-                stopSearchInput.addEventListener('input', function() {
-                    renderStops(this.value.trim().toLowerCase());
-                });
-
-                // Atualizar paradas ao mudar o tipo de viagem
-                directionSelect.addEventListener('change', function() {
-                    allStops = filterStopsByDirection(stops);
-                    renderStops(stopSearchInput.value.trim().toLowerCase());
-                    displayStopsOnMap(allStops);
-                });
-
-                // Display stops on map
-                displayStopsOnMap(allStops);
-
-                stopGroup.style.display = 'block';
-                showStopSelection();
-            } catch (error) {
-            }
-        });
+        // (Removido handler antigo de driver_id, todo o fluxo usa schedule_id)
 
         // Toggle between stop and custom address
         document.getElementById('use-stop-btn').addEventListener('click', function() {
@@ -737,7 +808,9 @@
             showCustomAddress();
         });
 
-        function showStopSelection() {
+
+        // Torna as funções globais para uso em listeners dinâmicos
+        window.showStopSelection = function() {
             isUsingStop = true;
             document.getElementById('stops-container').style.display = 'block';
             document.getElementById('custom-address-container').style.display = 'none';
@@ -753,11 +826,17 @@
             // Clear custom address if switching
             document.getElementById('address-input').value = '';
             if (selectedStopData) {
-                selectStop(selectedStopData);
+                window.selectStop(selectedStopData);
+            }
+            // Forçar resize do mapa para garantir exibição correta
+            if (window.google && window.google.maps && typeof map !== 'undefined' && map) {
+                setTimeout(function() {
+                    google.maps.event.trigger(map, 'resize');
+                }, 200);
             }
         }
 
-        function showCustomAddress() {
+        window.showCustomAddress = function() {
             isUsingStop = false;
             document.getElementById('stops-container').style.display = 'none';
             document.getElementById('custom-address-container').style.display = 'block';
@@ -776,7 +855,7 @@
             clearAddress();
         }
 
-        function selectStop(stop) {
+        window.selectStop = function(stop) {
             selectedStopData = stop;
             document.getElementById('stop_id').value = stop.id;
             document.getElementById('address').value = stop.address;

@@ -86,7 +86,34 @@
             @empty
                 <p style="text-align: center; color: #999; padding: 40px;">Nenhuma rota cadastrada</p>
             @endforelse
-        </div>
+    </div>
+    </div>
+@section('styles')
+<style>
+@media (max-width: 900px) {
+    #routesListWrapper {
+        max-height: 60vh;
+        overflow-y: auto;
+        margin-left: -10px;
+        margin-right: -10px;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    #routesList {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+    .route-card > div {
+        padding: 14px 8px !important;
+    }
+    .btn.btn-small {
+        min-width: 100px !important;
+        font-size: 0.98em !important;
+        padding: 8px 0 !important;
+    }
+}
+</style>
+@endsection
 @section('scripts')
 <script>
 const routeDirection = document.getElementById('routeDirection');

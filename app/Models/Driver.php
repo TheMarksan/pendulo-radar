@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,6 +22,11 @@ class Driver extends Model
         'password',
     ];
 
+
+    public function schedules()
+    {
+        return $this->hasMany(DriverSchedule::class);
+    }
 
     public function route()
     {
