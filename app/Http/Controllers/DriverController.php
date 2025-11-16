@@ -94,13 +94,33 @@ class DriverController extends Controller
     public function dashboard(Request $request)
     {
         $driverId = session('driver_id');
-
         if (!$driverId) {
             return redirect()->route('driver.login')
                 ->with('error', 'Faça login para continuar.');
         }
 
         $driver = Driver::findOrFail($driverId);
+
+
+        // Verificar se o motorista possui pelo menos um horário cadastrado
+        $hasSchedule = $driver->schedules()->exists();
+        if (!$hasSchedule) {
+            // Exibir view de aguardando admin
+            return view('driver.index', [
+                'passengers' => collect([]),
+                'lastBoarding' => null,
+                'driver' => $driver,
+                'car' => null,
+                'noCar' => true,
+                'route' => $driver->route,
+                'outboundStops' => collect([]),
+                'returnStops' => collect([]),
+                'tripProgress' => []
+            ]);
+        }
+
+        // Buscar reservas do motorista
+        $car = null;
 
         // Buscar reservas do motorista
         $query = Passenger::with('stop')->where('driver_id', $driver->id)->whereNotNull('scheduled_time');
@@ -143,7 +163,7 @@ class DriverController extends Controller
             'passengers' => $passengers,
             'lastBoarding' => $lastBoarding,
             'driver' => $driver,
-            'car' => null,
+            'car' => $car,
             'noCar' => false,
             'route' => $route,
             'outboundStops' => $outboundStops,

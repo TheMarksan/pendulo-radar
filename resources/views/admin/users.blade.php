@@ -11,6 +11,27 @@
         <h1 style="color: #343b71; margin-bottom: 30px;">👥 Gerenciar Usuários (Passageiros)</h1>
 
         <!-- Barra de pesquisa e filtros removidos -->
+        <form method="GET" action="{{ route('admin.users') }}" style="margin-bottom: 24px; max-width: 400px;">
+            <input type="text" id="searchInput" name="search" value="{{ request('search') }}" placeholder="Pesquisar por nome ou email..." style="width: 100%; padding: 10px 14px; border: 1.5px solid #343b71; border-radius: 6px; font-size: 1em; color: #343b71; background: #e8f0ff;">
+        </form>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const tableRows = document.querySelectorAll('#passengerTable tbody tr');
+            searchInput.addEventListener('input', function() {
+                const value = this.value.toLowerCase();
+                tableRows.forEach(row => {
+                    const name = row.querySelector('td:nth-child(1)')?.textContent.toLowerCase() || '';
+                    const email = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+                    if (name.includes(value) || email.includes(value)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        });
+        </script>
 
         @if(session('success'))
             <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 8px; margin-bottom: 20px;">

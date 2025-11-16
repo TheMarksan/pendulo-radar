@@ -236,8 +236,8 @@
 				{{ $currentDirection === 'outbound' ? '➡️ Ida' : '⬅️ Retorno' }}
 			</span>
 		</div>
-		<div id="driver-progress-bar-container" style="overflow-x: auto; margin: 24px 0 16px 0; padding-bottom: 8px;">
-			<div id="driver-progress-bar" style="display: flex; gap: 0; min-width: 600px; border: 1px solid #bbb; border-radius: 8px; background: #fff; box-sizing: border-box; padding: 10px 0;">
+		<div id="driver-progress-bar-container" style="overflow-x: auto; max-width: 100%; margin: 24px 0 16px 0; padding-bottom: 8px;">
+			<div id="driver-progress-bar" style="display: flex; gap: 0; min-width: 600px; border: 1px solid #bbb; border-radius: 8px; background: #fff; box-sizing: border-box; padding: 10px 0; overflow-x: auto;">
 				@foreach($stops as $i => $stop)
 					@php
 						$isCurrent = $i === $lastConfirmedIndex && $lastConfirmedIndex >= 0;

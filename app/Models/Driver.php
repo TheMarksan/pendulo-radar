@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class Driver extends Model
 {
     use HasFactory;
+    public function cars()
+    {
+        return $this->hasMany(\App\Models\Car::class);
+    }
 
     protected $fillable = [
         'name',
@@ -16,6 +20,10 @@ class Driver extends Model
         'pix_key',
         'access_key',
         'route_id',
+        'first_access',
+    ];
+    protected $casts = [
+        'first_access' => 'boolean',
     ];
 
     protected $hidden = [

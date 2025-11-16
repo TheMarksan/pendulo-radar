@@ -10,6 +10,35 @@ use Illuminate\Support\Facades\Storage;
 
 class PassengerController extends Controller
 {
+    // Exibe tela de troca de senha no primeiro acesso
+    public function firstAccess()
+    {
+        $passengerId = session('passenger_first_access_id');
+        if (!$passengerId) {
+            return redirect()->route('passenger.login')->with('error', 'Faça login para continuar.');
+        }
+        $passenger = Passenger::find($passengerId);
+        return view('passenger.first_access', compact('passenger'));
+    }
+
+    // Atualiza senha no primeiro acesso
+    public function updateFirstAccess(Request $request)
+    {
+        $passengerId = session('passenger_first_access_id');
+        if (!$passengerId) {
+            return redirect()->route('passenger.login')->with('error', 'Faça login para continuar.');
+        }
+        $request->validate([
+            'password' => 'required|string|min:4|confirmed',
+        ]);
+        $passenger = Passenger::find($passengerId);
+        $passenger->password = \Hash::make($request->password);
+        $passenger->first_access = false;
+        $passenger->save();
+        session()->forget('passenger_first_access_id');
+        session(['passenger_id' => $passenger->id]);
+        return redirect()->route('passenger.dashboard')->with('success', 'Senha redefinida com sucesso!');
+    }
     public function index()
     {
         return view('passenger.index');
@@ -270,21 +299,23 @@ class PassengerController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required|string|min:4|max:8',
+            'password' => 'required|string|min:4',
         ]);
 
-        $passenger = Passenger::where('email', $request->email)
-            ->where('password', $request->password)
-            ->first();
+        $passenger = Passenger::where('email', $request->email)->first();
 
-        if (!$passenger) {
+        if (!$passenger || !\Hash::check($request->password, $passenger->password)) {
             return back()->withErrors(['email' => 'Email ou senha incorretos.'])
                 ->withInput($request->only('email'));
         }
 
-        // Store passenger ID in session
-        session(['passenger_id' => $passenger->id]);
+        // Se for primeiro acesso, forçar troca de senha
+        if (!empty($passenger->first_access)) {
+            session(['passenger_first_access_id' => $passenger->id]);
+            return redirect()->route('passenger.first.access');
+        }
 
+        session(['passenger_id' => $passenger->id]);
         return redirect()->route('passenger.dashboard')
             ->with('success', 'Login realizado com sucesso!');
     }

@@ -27,12 +27,14 @@ class Passenger extends Model
         'boarded_at',
         'boarded_latitude',
         'boarded_longitude',
+        'first_access',
     ];
 
     protected $casts = [
         'scheduled_time' => 'datetime',
         'boarded_at' => 'datetime',
         'boarded' => 'boolean',
+        'first_access' => 'boolean',
     ];
 
 

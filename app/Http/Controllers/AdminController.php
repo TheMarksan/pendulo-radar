@@ -14,7 +14,36 @@ use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
+    // Resetar acesso do motorista
+    public function resetDriverAccess($id)
+    {
+        $driver = Driver::findOrFail($id);
+        $driver->update([
+            'password' => Hash::make('12345678'), // Senha padrão
+            'first_access' => true,
+        ]);
+        return back()->with('success', 'Acesso do motorista resetado! Nova senha: 12345678');
+    }
     // ...existing code...
+    // Listagem de motoristas com busca
+    public function drivers(Request $request)
+    {
+        $adminId = session('admin_id');
+        if (!$adminId) {
+            return redirect()->route('admin.login');
+        }
+        $query = Driver::query();
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('email', 'like', "%$search%")
+                  ->orWhere('phone', 'like', "%$search%");
+            });
+        }
+        $drivers = $query->orderBy('name')->get();
+        return view('admin.drivers', compact('drivers'));
+    }
     // Painel geral de viagens dos motoristas
     public function allDriversDashboard(Request $request)
     {
@@ -150,11 +179,17 @@ class AdminController extends Controller
             return redirect()->route('admin.login');
         }
 
-        $passengers = Passenger::whereNotNull('email')
+        $query = Passenger::whereNotNull('email')
             ->whereNotNull('password')
-            ->whereNull('scheduled_time')
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->whereNull('scheduled_time');
+        if (request()->filled('search')) {
+            $search = request('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('email', 'like', "%$search%");
+            });
+        }
+        $passengers = $query->orderBy('created_at', 'desc')->get();
 
         return view('admin.users', compact('passengers'));
     }
@@ -163,10 +198,11 @@ class AdminController extends Controller
     {
         $passenger = Passenger::findOrFail($id);
         $passenger->update([
-            'password' => Hash::make($passenger->email), // Senha = email
+            'password' => Hash::make('12345678'), // Senha padrão
+            'first_access' => true,
         ]);
 
-        return back()->with('success', 'Acesso resetado! Nova senha: ' . $passenger->email);
+        return back()->with('success', 'Acesso resetado! Nova senha: 12345678');
     }
 
     // Access Keys Management
@@ -322,11 +358,6 @@ class AdminController extends Controller
     }
 
     // Gerenciamento de Motoristas e Carros
-    public function drivers()
-    {
-        $drivers = \App\Models\Driver::with('route')->get();
-        return view('admin.drivers', compact('drivers'));
-    }
 
     public function cars($driverId)
     {

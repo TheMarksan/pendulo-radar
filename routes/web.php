@@ -1,4 +1,3 @@
-
 <?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
@@ -134,4 +133,8 @@ Route::get('/admin/motoristas', [App\Http\Controllers\AdminController::class, 'd
 Route::delete('/admin/motoristas/{id}', [App\Http\Controllers\AdminController::class, 'deleteDriver'])->name('admin.drivers.delete');
 Route::get('/admin/motoristas/{driverId}/editar-horario', [App\Http\Controllers\AdminController::class, 'editDriverSchedule'])->name('admin.drivers.editSchedule');
 Route::post('/admin/motoristas/{driverId}/editar-horario', [App\Http\Controllers\AdminController::class, 'updateDriverSchedule'])->name('admin.drivers.updateSchedule');
+Route::post('/admin/motoristas/{id}/reset', [App\Http\Controllers\AdminController::class, 'resetDriverAccess'])->name('admin.drivers.reset');
+
+// First access (password reset) for passenger
+require __DIR__.'/passenger_first_access.php';
 
