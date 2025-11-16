@@ -46,18 +46,19 @@
                 <option value="return">Retorno</option>
             </select>
         </div>
-        <div style="display: grid; gap: 20px;" id="routesList">
+    <div id="routesListWrapper" style="overflow-x: auto; overflow-y: auto; max-height: 60vh; width: 100%;">
+    <div style="display: grid; gap: 20px; min-width: 600px;" id="routesList">
             @forelse($routes as $route)
                 <div class="route-card" data-has-return="{{ $route->has_return ? '1' : '0' }}">
-                    <div style="border: 2px solid #dee2e6; border-radius: 10px; padding: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="border: 2px solid #dee2e6; border-radius: 10px; padding: 10px 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; gap: 8px;">
                             <div>
-                                <h3 style="margin-bottom: 10px;">{{ $route->name }}</h3>
-                                <p style="color: #666; margin-bottom: 10px;">{{ $route->description }}</p>
-                                <p style="margin: 0;">
+                                <h3 style="margin-bottom: 4px; font-size: 1.1em;">{{ $route->name }}</h3>
+                                <p style="color: #666; margin-bottom: 6px; font-size: 0.97em;">{{ $route->description }}</p>
+                                <p style="margin: 0; font-size: 0.95em;">
                                     <strong>Paradas:</strong> {{ $route->stops->count() }}
                                     @if($route->has_return)
-                                        <span style="margin-left: 10px; padding: 3px 8px; background: #fff3cd; color: #856404; border-radius: 5px; font-size: 0.85em;">
+                                        <span style="margin-left: 6px; padding: 2px 7px; background: #fff3cd; color: #856404; border-radius: 5px; font-size: 0.85em;">
                                             🔄 Com Retorno
                                         </span>
                                     @endif
@@ -67,7 +68,7 @@
                                 {{ $route->is_active ? '✓ Ativa' : '✗ Inativa' }}
                             </span>
                         </div>
-                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                        <div style="margin-top: 8px; display: flex; flex-direction: row; gap: 10px; align-items: center;">
                             <a href="{{ route('admin.stops', $route->id) }}" class="btn btn-small">📍 Gerenciar Paradas</a>
                             <form action="{{ route('admin.routes.toggle', $route->id) }}" method="POST" style="display: inline;">
                                 @csrf
@@ -86,6 +87,7 @@
             @empty
                 <p style="text-align: center; color: #999; padding: 40px;">Nenhuma rota cadastrada</p>
             @endforelse
+        </div>
     </div>
     </div>
 @section('styles')

@@ -18,8 +18,8 @@
             </div>
         @endif
 
-    <div>
-        <table id="passengerTable" style="width: 100%; border-collapse: collapse;">
+    <div style="overflow-x: auto; width: 100%;">
+        <table id="passengerTable" style="min-width: 600px; width: 100%; border-collapse: collapse;">
             <thead>
                 <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
                     <th style="padding: 12px; text-align: left;">Nome</th>
@@ -45,7 +45,7 @@
                         <td style="padding: 12px; text-align: center;">
                             <form action="{{ route('admin.users.reset', $passenger->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Resetar acesso? Nova senha será o email do usuário.')">
                                 @csrf
-                                <button type="submit" class="btn btn-small" style="background: #ffc107; padding: 5px 10px; font-size: 0.9em;">
+                                <button type="submit" class="btn" style="background: #ffc107;">
                                     🔄 Resetar Acesso
                                 </button>
                             </form>

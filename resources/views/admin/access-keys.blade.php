@@ -31,7 +31,8 @@
             <button type="submit" class="btn">Gerar Nova Chave</button>
         </form>
 
-        <table style="width: 100%; border-collapse: collapse;">
+    <div style="overflow-x: auto; overflow-y: auto; max-height: 60vh; width: 100%;">
+    <table style="min-width: 600px; width: 100%; border-collapse: collapse;">
             <thead>
                 <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
                     <th style="padding: 12px; text-align: left;">Chave</th>
@@ -55,14 +56,14 @@
                         <td style="padding: 12px; text-align: center;">
                             <form action="{{ route('admin.access.keys.toggle', $key->id) }}" method="POST" style="display: inline;">
                                 @csrf
-                                <button type="submit" class="btn btn-small" style="padding: 5px 10px; font-size: 0.9em; background: {{ $key->is_active ? '#ffc107' : '#28a745' }};">
+                                <button type="submit" class="btn btn-small" style="background: {{ $key->is_active ? '#ffc107' : '#28a745' }};">
                                     {{ $key->is_active ? 'Desativar' : 'Ativar' }}
                                 </button>
                             </form>
                             <form action="{{ route('admin.access.keys.delete', $key->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Excluir esta chave?')">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-small" style="padding: 5px 10px; font-size: 0.9em; background: #dc3545;">
+                                <button type="submit" class="btn btn-small" style="background: #dc3545;">
                                     🗑️
                                 </button>
                             </form>
@@ -74,7 +75,8 @@
                     </tr>
                 @endforelse
             </tbody>
-        </table>
+    </table>
+    </div>
     </div>
 </div>
 @endsection

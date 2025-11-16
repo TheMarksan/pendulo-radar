@@ -228,7 +228,7 @@
         <a href="{{ route('passenger.register') }}" class="choice-card">
             <div class="choice-icon">➕</div>
             <h2>Criar Acesso</h2>
-            <p>Cadastrar CPF e senha para fazer reservas</p>
+            <p>Cadastrar E-mail e senha para fazer reservas</p>
         </a>
 
         <a href="{{ route('passenger.login') }}" class="choice-card">
