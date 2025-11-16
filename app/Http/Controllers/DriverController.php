@@ -12,6 +12,35 @@ use Illuminate\Support\Facades\Hash;
 
 class DriverController extends Controller
 {
+    // Exibe tela de primeiro acesso para troca de senha
+    public function firstAccess()
+    {
+        $driverId = session('driver_first_access_id');
+        if (!$driverId) {
+            return redirect()->route('driver.login');
+        }
+        $driver = Driver::findOrFail($driverId);
+        return view('driver.first_access', compact('driver'));
+    }
+
+    // Processa troca de senha no primeiro acesso
+    public function updateFirstAccess(Request $request)
+    {
+        $driverId = session('driver_first_access_id');
+        if (!$driverId) {
+            return redirect()->route('driver.login');
+        }
+        $request->validate([
+            'password' => 'required|string|min:4|confirmed',
+        ]);
+        $driver = Driver::findOrFail($driverId);
+        $driver->password = Hash::make($request->password);
+        $driver->first_access = false;
+        $driver->save();
+        session()->forget('driver_first_access_id');
+        session(['driver_id' => $driver->id]);
+        return redirect()->route('driver.dashboard')->with('success', 'Senha atualizada com sucesso!');
+    }
     public function registerForm()
     {
         return view('driver.register');
@@ -78,8 +107,13 @@ class DriverController extends Controller
                 ->withInput($request->only('email'));
         }
 
-        session(['driver_id' => $driver->id]);
+        // Se for primeiro acesso, redireciona para troca de senha
+        if (!empty($driver->first_access)) {
+            session(['driver_first_access_id' => $driver->id]);
+            return redirect()->route('driver.first.access');
+        }
 
+        session(['driver_id' => $driver->id]);
         return redirect()->route('driver.dashboard')
             ->with('success', 'Login realizado com sucesso!');
     }
