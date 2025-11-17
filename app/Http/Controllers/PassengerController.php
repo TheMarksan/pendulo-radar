@@ -57,9 +57,8 @@ class PassengerController extends Controller
             'password' => 'required|string|min:4|max:8',
         ]);
 
-        // Check if account already exists
+        // Check if account already exists (by email)
         $existingAccount = Passenger::where('email', $validated['email'])
-            ->where('password', $validated['password'])
             ->whereNull('scheduled_time')
             ->first();
 
@@ -67,6 +66,11 @@ class PassengerController extends Controller
             return back()->withErrors(['email' => 'Já existe uma conta com este email.'])
                 ->withInput();
         }
+
+        // Sempre salvar senha como hash Bcrypt
+        $validated['password'] = \Hash::make($validated['password']);
+        // Por padrão, não exige troca de senha após cadastro
+        $validated['first_access'] = false;
 
         $passenger = Passenger::create($validated);
 
@@ -309,7 +313,8 @@ class PassengerController extends Controller
                 ->withInput($request->only('email'));
         }
 
-        // Se for primeiro acesso, forçar troca de senha
+
+        // Só força troca de senha se o admin resetou o acesso (first_access = true)
         if (!empty($passenger->first_access)) {
             session(['passenger_first_access_id' => $passenger->id]);
             return redirect()->route('passenger.first.access');

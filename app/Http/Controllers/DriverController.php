@@ -79,6 +79,8 @@ class DriverController extends Controller
             'pix_key' => $validated['pix_key'],
             'access_key' => $validated['access_key'],
             'route_id' => $validated['route_id'],
+            // Não exige troca de senha após cadastro
+            'first_access' => false,
         ]);
 
         // Auto login
@@ -107,7 +109,7 @@ class DriverController extends Controller
                 ->withInput($request->only('email'));
         }
 
-        // Se for primeiro acesso, redireciona para troca de senha
+        // Só força troca de senha se o admin resetou o acesso (first_access = true)
         if (!empty($driver->first_access)) {
             session(['driver_first_access_id' => $driver->id]);
             return redirect()->route('driver.first.access');
