@@ -257,10 +257,18 @@
 @endsection
 
 @section('content')
+
 <div class="card">
     <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: relative;">
         <a href="{{ route('home') }}" class="back-link" style="margin: 0;">← Voltar</a>
         <a href="{{ route('driver.logout') }}" class="logout-btn">🚪 Sair</a>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+        <h2 style="color: #343b71; font-size: 1.5em; margin: 0;">
+            👋 Seja bem-vindo, <span style="color: #007bff;">{{ $driver->name }}</span>
+        </h2>
+    <a href="{{ route('driver.profile.edit') }}" style="background: #f4f6fa; color: #343b71; border: 1.5px solid #cfd8e3; border-radius: 5px; padding: 6px 16px; font-size: 1em; text-decoration: none; transition: background 0.2s;">✏️ Editar Perfil</a>
     </div>
 
     <h2 style="color: #343b71; font-size: 2em; margin-bottom: 20px;">

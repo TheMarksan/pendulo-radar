@@ -342,7 +342,7 @@
             <input type="hidden" id="stop_id" name="stop_id">
         </div>
 
-        <input type="hidden" id="address" name="address">
+    <input type="hidden" id="address" name="address">
 
         <div class="form-group">
             <label for="payment_method">Forma de Pagamento *</label>
@@ -371,8 +371,8 @@
             <small style="color: #666; display: block; margin-top: 5px;">Horário aproximado em que estará no ponto</small>
         </div>
 
-        <input type="hidden" id="latitude" name="latitude">
-        <input type="hidden" id="longitude" name="longitude">
+    <input type="hidden" id="latitude" name="latitude">
+    <input type="hidden" id="longitude" name="longitude">
 
         <button type="submit" class="btn" style="width: 100%; margin-top: 20px;">
             Confirmar Reserva
@@ -384,6 +384,44 @@
 
 @section('scripts')
 <script>
+// Dados do passageiro logado para fallback de endereço
+const passengerCurrentAddress = @json($passenger->address);
+const passengerCurrentLatitude = @json($passenger->latitude);
+const passengerCurrentLongitude = @json($passenger->longitude);
+
+// Função para obter endereço atual via geolocalização e reverse geocode
+async function fillCurrentLocationFields() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+            // Reverse geocode para obter endereço
+            if (window.google && google.maps) {
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ location: { lat, lng } }, function(results, status) {
+                    if (status === 'OK' && results[0]) {
+                        document.getElementById('address').value = results[0].formatted_address;
+                    } else {
+                        document.getElementById('address').value = passengerCurrentAddress || '';
+                    }
+                });
+            } else {
+                document.getElementById('address').value = passengerCurrentAddress || '';
+            }
+        }, function() {
+            // Se usuário negar permissão, usa endereço cadastrado
+            document.getElementById('address').value = passengerCurrentAddress || '';
+            document.getElementById('latitude').value = passengerCurrentLatitude || '';
+            document.getElementById('longitude').value = passengerCurrentLongitude || '';
+        });
+    } else {
+        document.getElementById('address').value = passengerCurrentAddress || '';
+        document.getElementById('latitude').value = passengerCurrentLatitude || '';
+        document.getElementById('longitude').value = passengerCurrentLongitude || '';
+    }
+}
 // Lógica para exibir campos de data/horário após rota, e buscar motoristas após data/horário
 document.addEventListener('DOMContentLoaded', function() {
     const routeSelect = document.getElementById('route_id');
@@ -393,9 +431,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const timeInput = document.getElementById('scheduled_time_start');
     const driverSelect = document.getElementById('schedule_id');
 
+    function safeSetDriverSelect(html, disabled = true) {
+        if (driverSelect) {
+            driverSelect.innerHTML = html;
+            driverSelect.disabled = disabled;
+        }
+    }
+
     function resetDrivers() {
-        driverSelect.innerHTML = '<option value="">Selecione data e horário primeiro</option>';
-        driverSelect.disabled = true;
+        safeSetDriverSelect('<option value="">Selecione data e horário primeiro</option>', true);
         driverGroup.style.display = 'none';
         // Esconde também o grupo de parada/endereço
         const stopGroup = document.getElementById('stop-selection-group');
@@ -419,29 +463,27 @@ document.addEventListener('DOMContentLoaded', function() {
             resetDrivers();
             return;
         }
-        driverSelect.innerHTML = '<option value="">Carregando...</option>';
-        driverSelect.disabled = true;
-        driverGroup.style.display = '';
+    safeSetDriverSelect('<option value="">Carregando...</option>', true);
+    driverGroup.style.display = '';
         fetch(`/api/rotas/${routeId}/motoristas?date=${date}&time=${time}`)
             .then(res => res.json())
             .then(drivers => {
                 if (!drivers.length) {
-                    driverSelect.innerHTML = '<option value="">Nenhum motorista disponível para este horário</option>';
-                    driverSelect.disabled = true;
+                    safeSetDriverSelect('<option value="">Nenhum motorista disponível para este horário</option>', true);
                     return;
                 }
-                driverSelect.innerHTML = '<option value="">Selecione o motorista e horário</option>';
+                safeSetDriverSelect('<option value="">Selecione o motorista e horário</option>', false);
                 drivers.forEach(sch => {
-                    const opt = document.createElement('option');
-                    opt.value = sch.schedule_id;
-                    opt.textContent = `${sch.driver_name} (Saída: ${sch.departure_time}${sch.return_time ? ', Retorno: ' + sch.return_time : ''})`;
-                    driverSelect.appendChild(opt);
+                    if (driverSelect) {
+                        const opt = document.createElement('option');
+                        opt.value = sch.schedule_id;
+                        opt.textContent = `${sch.driver_name} (Saída: ${sch.departure_time}${sch.return_time ? ', Retorno: ' + sch.return_time : ''})`;
+                        driverSelect.appendChild(opt);
+                    }
                 });
-                driverSelect.disabled = false;
             })
             .catch(() => {
-                driverSelect.innerHTML = '<option value="">Erro ao buscar motoristas</option>';
-                driverSelect.disabled = true;
+                safeSetDriverSelect('<option value="">Erro ao buscar motoristas</option>', true);
             });
     }
 
@@ -751,42 +793,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let selectedStopData = null;
         let isUsingStop = true;
 
-        // Route selection handler
-        document.getElementById('route_id').addEventListener('change', async function() {
-            const routeId = this.value;
-            const driverSelect = document.getElementById('driver_id');
-            const stopGroup = document.getElementById('stop-selection-group');
 
-            // Reset
-            driverSelect.innerHTML = '<option value="">Carregando...</option>';
-            driverSelect.disabled = true;
-            stopGroup.style.display = 'none';
-            clearAddress();
-
-            if (!routeId) {
-                driverSelect.innerHTML = '<option value="">Selecione uma rota primeiro</option>';
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/rotas/${routeId}/motoristas`);
-                const drivers = await response.json();
-
-                driverSelect.innerHTML = '<option value="">Selecione um motorista</option>';
-                drivers.forEach(driver => {
-                    const option = document.createElement('option');
-                    option.value = driver.id;
-                    option.textContent = `${driver.name} (Saída: ${driver.departure_time}${driver.return_time ? ", Retorno: " + driver.return_time : ""})`;
-                    driverSelect.appendChild(option);
-                });
-
-                driverSelect.disabled = false;
-            } catch (error) {
-                driverSelect.innerHTML = '<option value="">Erro ao carregar motoristas</option>';
-            }
-        });
-
-        // Driver selection handler
         // (Removido handler antigo de driver_id, todo o fluxo usa schedule_id)
 
         // Toggle between stop and custom address
@@ -864,15 +871,28 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedStopData = null;
         }
 
-        // Form validation
-        document.getElementById('passengerForm').addEventListener('submit', function(e) {
-            const lat = document.getElementById('latitude').value;
-            const lng = document.getElementById('longitude').value;
-            const address = document.getElementById('address').value;
+        // Form validation removida: backend já trata fallback de endereço
+        // Preencher campos hidden com endereço atual do passageiro ao carregar
+        // (caso o usuário não escolha parada nem digite endereço, backend já faz fallback, mas frontend envia por clareza)
+        // Ao carregar, tenta preencher com endereço atual do passageiro (geolocalização)
+        fillCurrentLocationFields();
 
-            if (!lat || !lng || !address) {
-                e.preventDefault();
-                return false;
+        // Antes de submeter, se não houver parada nem endereço customizado, garantir que os campos estão preenchidos com endereço atual
+        document.getElementById('passengerForm').addEventListener('submit', function(e) {
+            const stopId = document.getElementById('stop_id').value;
+            const addressInput = document.getElementById('address-input').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const lat = document.getElementById('latitude').value.trim();
+            const lng = document.getElementById('longitude').value.trim();
+            if (!stopId && !addressInput) {
+                // Se já tem endereço/lat/lng preenchido, não faz nada. Se não, tenta preencher.
+                if (!address || !lat || !lng) {
+                    e.preventDefault();
+                    fillCurrentLocationFields();
+                    setTimeout(() => {
+                        document.getElementById('passengerForm').submit();
+                    }, 1200); // tempo para reverse geocode
+                }
             }
         });
     });

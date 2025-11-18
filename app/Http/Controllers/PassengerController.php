@@ -127,11 +127,18 @@ class PassengerController extends Controller
             'schedule_id' => 'required|exists:driver_schedules,id',
             'stop_id' => 'nullable|exists:stops,id',
             'scheduled_time_end' => 'required|date_format:H:i|after:scheduled_time_start',
-            'address' => 'required|string',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
+            'address' => 'nullable|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
             'payment_method' => 'required|in:pix,dinheiro,vale',
         ]);
+
+        // Se não escolher parada nem digitar endereço, usar endereço atual do passageiro
+        if (empty($validated['stop_id']) && (empty($validated['address']) || empty($validated['latitude']) || empty($validated['longitude']))) {
+            $validated['address'] = $passenger->address;
+            $validated['latitude'] = $passenger->latitude;
+            $validated['longitude'] = $passenger->longitude;
+        }
 
         $schedule = \App\Models\DriverSchedule::with('driver')->findOrFail($request->schedule_id);
 
