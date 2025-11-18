@@ -63,11 +63,18 @@
                             @endif
                         </td>
                         <td style="padding: 12px;">{{ $passenger->created_at->format('d/m/Y H:i') }}</td>
-                        <td style="padding: 12px; text-align: center;">
+                        <td style="padding: 12px; text-align: center; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
                             <form action="{{ route('admin.users.reset', $passenger->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Resetar acesso? Nova senha será o email do usuário.')">
                                 @csrf
-                                <button type="submit" class="btn" style="background: #ffc107;">
+                                <button type="submit" class="btn" style="background: #ffc107; min-width: 110px; padding: 8px 14px; font-size: 0.98em; border-radius: 8px;">
                                     🔄 Resetar Acesso
+                                </button>
+                            </form>
+                            <form action="{{ route('admin.users.delete', $passenger->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn" style="background: #dc3545; color: white; min-width: 110px; padding: 8px 14px; font-size: 0.98em; border-radius: 8px;">
+                                    🗑️ Excluir
                                 </button>
                             </form>
                         </td>

@@ -92,6 +92,8 @@ Route::get('/motorista/login', [DriverController::class, 'login'])->name('driver
 Route::post('/motorista/login', [DriverController::class, 'authenticate'])->name('driver.authenticate');
 Route::get('/motorista/logout', [DriverController::class, 'logout'])->name('driver.logout');
 Route::get('/motorista/dashboard', [DriverController::class, 'dashboard'])->name('driver.dashboard');
+Route::get('/motorista/editar-perfil', [DriverController::class, 'editProfile'])->name('driver.profile.edit');
+Route::post('/motorista/editar-perfil', [DriverController::class, 'updateProfile'])->name('driver.profile.update');
 Route::get('/motorista/primeiro-acesso', [DriverController::class, 'firstAccess'])->name('driver.first.access');
 Route::post('/motorista/primeiro-acesso', [DriverController::class, 'updateFirstAccess'])->name('driver.update.first.access');
 Route::get('/motorista/comprovante/{id}', [DriverController::class, 'viewReceipt'])->name('driver.receipt');
@@ -110,6 +112,7 @@ Route::get('/admin/dashboard', [App\Http\Controllers\AdminController::class, 'da
 // Admin - Users
 Route::get('/admin/usuarios', [App\Http\Controllers\AdminController::class, 'users'])->name('admin.users');
 Route::post('/admin/usuarios/{id}/reset', [App\Http\Controllers\AdminController::class, 'resetUserAccess'])->name('admin.users.reset');
+Route::delete('/admin/usuarios/{id}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('admin.users.delete');
 
 // Admin - Access Keys
 Route::get('/admin/chaves', [App\Http\Controllers\AdminController::class, 'accessKeys'])->name('admin.access.keys');
@@ -139,4 +142,5 @@ Route::post('/admin/motoristas/{id}/reset', [App\Http\Controllers\AdminControlle
 
 // First access (password reset) for passenger
 require __DIR__.'/passenger_first_access.php';
+require __DIR__.'/admin_driver_route.php';
 

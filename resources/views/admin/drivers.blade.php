@@ -54,19 +54,25 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @php
+                        $rotas = \App\Models\Route::where('is_active', true)->orderBy('name')->get();
+                    @endphp
                     @forelse($drivers as $driver)
                         <tr style="border-bottom: 1px solid #e9ecef;">
                             <td style="padding: 15px;">{{ $driver->name }}</td>
                             <td style="padding: 15px;">{{ $driver->email }}</td>
                             <td style="padding: 15px;">{{ $driver->phone }}</td>
-                            <td style="padding: 15px;">
-                                @if($driver->route)
-                                    <span style="background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;">
-                                        {{ $driver->route->name }}
-                                    </span>
-                                @else
-                                    <span style="color: #999;">Sem rota</span>
-                                @endif
+                            <td style="padding: 15px; min-width: 180px;">
+                                <form action="{{ route('admin.drivers.updateRoute', $driver->id) }}" method="POST" style="display: flex; align-items: center; gap: 6px;">
+                                    @csrf
+                                    <select name="route_id" style="padding: 6px 10px; border-radius: 5px; border: 1.5px solid #343b71; min-width: 110px;">
+                                        <option value="">Sem rota</option>
+                                        @foreach($rotas as $rota)
+                                            <option value="{{ $rota->id }}" @if($driver->route_id == $rota->id) selected @endif>{{ $rota->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="submit" style="background: #343b71; color: white; border: none; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 0.9em;">Salvar</button>
+                                </form>
                             </td>
                             <td style="padding: 15px;">
                                 @if($driver->pix_key)

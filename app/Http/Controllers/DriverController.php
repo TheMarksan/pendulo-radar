@@ -9,9 +9,40 @@ use App\Models\TripProgress;
 use App\Models\Stop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-
 class DriverController extends Controller
 {
+    // Exibe formulário de edição de perfil do motorista
+    public function editProfile(Request $request)
+    {
+        $driverId = session('driver_id');
+        if (!$driverId) {
+            return redirect()->route('driver.login');
+        }
+        $driver = Driver::findOrFail($driverId);
+        return view('driver.edit_profile', compact('driver'));
+    }
+
+    // Atualiza perfil do motorista
+    public function updateProfile(Request $request)
+    {
+        $driverId = session('driver_id');
+        if (!$driverId) {
+            return redirect()->route('driver.login');
+        }
+        $driver = Driver::findOrFail($driverId);
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:drivers,email,' . $driver->id,
+            'phone' => 'required|string',
+            'pix_key' => 'nullable|string',
+        ]);
+        $driver->name = $request->name;
+        $driver->email = $request->email;
+        $driver->phone = $request->phone;
+        $driver->pix_key = $request->pix_key;
+        $driver->save();
+        return redirect()->route('driver.dashboard')->with('success', 'Perfil atualizado com sucesso!');
+    }
     // Exibe tela de primeiro acesso para troca de senha
     public function firstAccess()
     {

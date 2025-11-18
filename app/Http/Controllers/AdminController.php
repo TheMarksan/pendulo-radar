@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Admin;
@@ -14,6 +13,28 @@ use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
+    // Atualizar rota do motorista
+    public function updateDriverRoute(Request $request, $id)
+    {
+        $adminId = session('admin_id');
+        if (!$adminId) {
+            return redirect()->route('admin.login');
+        }
+        $driver = Driver::findOrFail($id);
+        $request->validate([
+            'route_id' => 'nullable|exists:routes,id',
+        ]);
+        $driver->route_id = $request->input('route_id') ?: null;
+        $driver->save();
+        return redirect()->route('admin.drivers')->with('success', 'Rota do motorista atualizada com sucesso!');
+    }
+    // Deletar usuário (passageiro) pelo painel admin
+    public function deleteUser($id)
+    {
+        $passenger = Passenger::findOrFail($id);
+        $passenger->delete();
+        return back()->with('success', 'Usuário excluído com sucesso!');
+    }
     // Resetar acesso do motorista
     public function resetDriverAccess($id)
     {
